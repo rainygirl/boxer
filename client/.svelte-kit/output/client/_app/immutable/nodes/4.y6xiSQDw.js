@@ -1,0 +1,1 @@
+import{a,f as l}from"../chunks/Dp9ZGGoO.js";import"../chunks/B9-kU-OL.js";var o=l('<div class="flex flex-col items-center justify-center h-full text-slate-400"><div class="text-6xl mb-4">📦</div> <p class="text-lg font-medium">프로젝트를 선택하거나 새로 만들어보세요</p></div>');function m(t){var e=o();a(t,e)}export{m as component};

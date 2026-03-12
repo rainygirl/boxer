@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun install:*)",
+      "Bash(cd /Users/rainygirl/Workspace/boxer && npm install 2>&1 | tail -3)",
+      "Bash(npm install:*)",
+      "Bash(cd /Users/rainygirl/Workspace/boxer/server && pip3 install -r requirements.txt 2>&1 | tail -10)",
+      "Bash(python3 manage.py makemigrations 2>&1)",
+      "Bash(python3 manage.py check 2>&1)",
+      "Bash(npx svelte-kit:*)",
+      "Bash(npm run:*)",
+      "Bash(cd /Users/rainygirl/Workspace/boxer/server && python3 manage.py check 2>&1 | head -5 && python3 --version && node --version && npm --version)",
+      "Bash(cd /Users/rainygirl/Workspace/boxer/server && pip3 show django django-ninja django-allauth | grep -E \"^\\(Name|Version\\):\")",
+      "Bash(cd /Users/rainygirl/Workspace/boxer/server && python3 -c \"from dotenv import load_dotenv; load_dotenv\\(\\); import os; cid = os.environ.get\\('GOOGLE_CLIENT_ID', ''\\); print\\('GOOGLE_CLIENT_ID:', repr\\(cid[:20] + '...' if len\\(cid\\) > 20 else cid or '\\(비어있음\\)'\\)\\)\")",
+      "Bash(cd /Users/rainygirl/Workspace/boxer && python3 -c \"from dotenv import load_dotenv; load_dotenv\\(\\); import os; cid = os.environ.get\\('GOOGLE_CLIENT_ID', ''\\); print\\('GOOGLE_CLIENT_ID:', repr\\(cid[:20] + '...' if len\\(cid\\) > 20 else cid or '\\(비어있음\\)'\\)\\)\")",
+      "Bash(cd /Users/rainygirl/Workspace/boxer/server && python3 -c \"from dotenv import load_dotenv; from pathlib import Path; load_dotenv\\(Path\\('.'\\).resolve\\(\\) / '.env'\\); import os; print\\('CLIENT_URL:', os.environ.get\\('CLIENT_URL', '\\(없음\\)'\\)\\)\")",
+      "Bash(ls /Users/rainygirl/Workspace/boxer/client/src/routes/app/project/[projectId]/)",
+      "Bash(grep -r \"[\\\\u00AC-\\\\u9FFF]\" /Users/rainygirl/Workspace/boxer/client/src --include=\"*.svelte\" 2>/dev/null | head -50)",
+      "Bash(cd /Users/rainygirl/Workspace/boxer/server && python3 manage.py migrate 2>&1)",
+      "Bash(pip3 install:*)",
+      "Bash(ls /Users/rainygirl/Workspace/boxer/server/.env* 2>/dev/null)",
+      "Bash(cd /Users/rainygirl/Workspace/boxer/server && python3 -c \"from django.conf import settings; import django, os; os.environ.setdefault\\('DJANGO_SETTINGS_MODULE', 'config.settings'\\); django.setup\\(\\); print\\('CLIENT_URL:', settings.CLIENT_URL\\); print\\('R2_CONFIGURED:', settings.R2_CONFIGURED\\)\")"
+    ]
+  }
+}

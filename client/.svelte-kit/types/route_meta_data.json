@@ -1,0 +1,24 @@
+{
+	"/": [
+		"src/routes/+page.ts",
+		"src/routes/+layout.ts",
+		"src/routes/+layout.ts"
+	],
+	"/app": [
+		"src/routes/app/+layout.ts",
+		"src/routes/+layout.ts",
+		"src/routes/app/+layout.ts",
+		"src/routes/+layout.ts"
+	],
+	"/app/project/[projectId]": [
+		"src/routes/app/project/[projectId]/+page.ts",
+		"src/routes/app/+layout.ts",
+		"src/routes/+layout.ts"
+	],
+	"/auth/callback": [
+		"src/routes/+layout.ts"
+	],
+	"/login": [
+		"src/routes/+layout.ts"
+	]
+}

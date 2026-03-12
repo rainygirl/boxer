@@ -1,0 +1,15 @@
+{
+  "name": "boxer",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && python3 dev_start.py",
+    "dev:client": "cd client && npm run dev",
+    "setup:server": "cd server && pip3 install -r requirements.txt && python3 manage.py migrate",
+    "setup:client": "cd client && npm install",
+    "setup": "npm run setup:server && npm run setup:client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
