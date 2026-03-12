@@ -3,17 +3,19 @@
   import { invalidate, goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth';
   import { themeStore } from '$lib/stores/theme';
-  import { localeStore } from '$lib/stores/locale';
   import { t } from '$lib/i18n';
   import { get } from 'svelte/store';
   import { projectsApi } from '$lib/api/projects';
   import { authApi } from '$lib/api/auth';
+  import { draggingTask, sidebarHoverProjectId } from '$lib/stores/drag';
   import type { Project } from '$lib/types';
   import CreateProjectModal from './CreateProjectModal.svelte';
+  import LanguageModal from './LanguageModal.svelte';
 
   const { projects }: { projects: Project[] } = $props();
 
   let showCreate = $state(false);
+  let showLanguageModal = $state(false);
   let deleting = $state<string | null>(null);
   let showUserMenu = $state(false);
   let editingName = $state(false);
@@ -21,8 +23,11 @@
   let savingName = $state(false);
 
   const currentProjectId = $derived($page.params.projectId);
-  const isDark = $derived($themeStore === 'dark');
-  const isKo = $derived($localeStore === 'ko');
+  const themeLabel = $derived(
+    $themeStore === 'light' ? { icon: '🌙', label: $t('sidebar.blueMode') } :
+    $themeStore === 'blue'  ? { icon: '⬛', label: $t('sidebar.blackMode') } :
+                              { icon: '☀️', label: $t('sidebar.lightMode') }
+  );
 
   async function deleteProject(p: Project) {
     if (!confirm(get(t)('project.deleteConfirm', { name: p.name }))) return;
@@ -65,6 +70,33 @@
       showUserMenu = false;
     }
   }
+
+  // During a drag, track which project the cursor is over via pointermove + elementFromPoint.
+  // onpointerenter/leave don't fire reliably when svelte-dnd-action holds pointer capture.
+  $effect(() => {
+    if (!$draggingTask) {
+      sidebarHoverProjectId.set(null);
+      return;
+    }
+
+    function onMove(e: PointerEvent) {
+      // elementsFromPoint returns all layers top-to-bottom.
+      // The svelte-dnd-action dragged clone (#dnd-action-dragged-el) sits on top
+      // and would block elementFromPoint — skip it to reach the element below.
+      const els = document.elementsFromPoint(e.clientX, e.clientY);
+      const el = els.find(
+        (el) => el.id !== 'dnd-action-dragged-el' && !el.closest('#dnd-action-dragged-el')
+      );
+      const id = el?.closest('[data-project-id]')?.getAttribute('data-project-id') ?? null;
+      sidebarHoverProjectId.set(id);
+    }
+
+    document.addEventListener('pointermove', onMove);
+    return () => {
+      document.removeEventListener('pointermove', onMove);
+      sidebarHoverProjectId.set(null);
+    };
+  });
 </script>
 
 <svelte:window onclick={closeMenu} />
@@ -76,6 +108,23 @@
       <span class="text-xl">📦</span>
       <span class="font-bold text-slate-800 dark:text-slate-100 text-lg">Boxer</span>
     </div>
+  </div>
+
+  <!-- My Issues -->
+  <div class="px-3 pt-3 pb-1">
+    <a
+      href="/app/my-issues"
+      class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+             {$page.url.pathname === '/app/my-issues'
+               ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400'
+               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200'}"
+    >
+      <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="8" r="4"/>
+        <path stroke-linecap="round" d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+      {$t('sidebar.myIssues')}
+    </a>
   </div>
 
   <!-- Projects -->
@@ -91,22 +140,30 @@
 
     <nav class="space-y-0.5 px-2">
       {#each projects as p (p.id)}
+        {@const isActive = currentProjectId === p.id}
+        {@const isDragTarget = $draggingTask !== null && $sidebarHoverProjectId === p.id && !isActive}
         <a
           href="/app/project/{p.id}"
+          data-project-id={isActive ? null : p.id}
           class="flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm transition-colors group {
-            currentProjectId === p.id
-              ? 'bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-400 font-medium'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+            isDragTarget
+              ? 'bg-brand-100 dark:bg-brand-500/20 ring-2 ring-brand-400 dark:ring-brand-500 text-brand-700 dark:text-brand-300'
+              : isActive
+                ? 'bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-400 font-medium'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
           }"
         >
-          <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: {p.color}"></span>
+          <span class="w-2.5 h-2.5 rounded-full shrink-0 transition-transform {isDragTarget ? 'scale-125' : ''}" style="background-color: {p.color}"></span>
           <span class="flex-1 truncate">{p.name}</span>
-          {#if currentProjectId === p.id}
+          {#if isActive}
             <button
-              onclick={(e) => { e.preventDefault(); deleteProject(p); }}
+              onclick={(e) => { e.preventDefault(); e.stopPropagation(); deleteProject(p); }}
               disabled={deleting === p.id}
               class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-all text-xs px-1"
             >✕</button>
+          {/if}
+          {#if isDragTarget}
+            <span class="text-[10px] font-semibold text-brand-500 dark:text-brand-400 shrink-0">여기에 놓기</span>
           {/if}
         </a>
       {/each}
@@ -137,16 +194,16 @@
             onclick={() => { themeStore.toggle(); }}
             class="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
-            <span class="text-base">{isDark ? '☀️' : '🌙'}</span>
-            <span>{isDark ? $t('sidebar.lightMode') : $t('sidebar.darkMode')}</span>
+            <span class="text-base">{themeLabel.icon}</span>
+            <span>{themeLabel.label}</span>
           </button>
           <div class="h-px bg-slate-100 dark:bg-slate-700"></div>
           <button
-            onclick={() => { localeStore.set(isKo ? 'en' : 'ko'); }}
+            onclick={() => { showUserMenu = false; showLanguageModal = true; }}
             class="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
             <span class="text-base">🌐</span>
-            <span>{isKo ? 'English' : '한국어'}</span>
+            <span>{$t('sidebar.language')}</span>
           </button>
           <div class="h-px bg-slate-100 dark:bg-slate-700"></div>
           <button
@@ -205,4 +262,8 @@
 
 {#if showCreate}
   <CreateProjectModal onClose={() => (showCreate = false)} />
+{/if}
+
+{#if showLanguageModal}
+  <LanguageModal onClose={() => (showLanguageModal = false)} />
 {/if}

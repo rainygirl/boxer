@@ -1,6 +1,7 @@
 <script lang="ts">
   import { authStore } from '$lib/stores/auth';
   import Sidebar from '$lib/components/Sidebar.svelte';
+  import Toast from '$lib/components/Toast.svelte';
 
   const { data, children } = $props();
 
@@ -15,3 +16,5 @@
     {@render children()}
   </main>
 </div>
+
+<Toast />

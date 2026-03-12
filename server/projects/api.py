@@ -1,3 +1,4 @@
+import re
 from typing import List
 from uuid import UUID
 from ninja import Router
@@ -6,7 +7,21 @@ from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from .models import Project, ProjectMember
-from .schemas import ProjectCreate, ProjectUpdate, ProjectOut, ProjectMemberOut, MemberInvite, MemberRoleUpdate
+from .schemas import ProjectCreate, ProjectUpdate, ProjectColumnsUpdate, ProjectOut, ProjectMemberOut, MemberInvite, MemberRoleUpdate
+
+_KEY_RE = re.compile(r'^[A-Z]{1,5}$')
+
+
+def _validate_key(key: str, exclude_id=None) -> str:
+    key = key.strip().upper()
+    if not _KEY_RE.match(key):
+        raise HttpError(400, 'Project key must be 1–5 uppercase letters (A–Z only)')
+    qs = Project.objects.filter(key=key)
+    if exclude_id:
+        qs = qs.exclude(pk=exclude_id)
+    if qs.exists():
+        raise HttpError(400, f'Project key "{key}" is already in use')
+    return key
 
 User = get_user_model()
 
@@ -28,10 +43,10 @@ def list_projects(request: HttpRequest):
 
 @router.post('', response=ProjectOut, summary='프로젝트 생성')
 def create_project(request: HttpRequest, payload: ProjectCreate):
-    project = Project.objects.create(
-        owner=request.auth,
-        **payload.dict(),
-    )
+    data = payload.dict(exclude_none=True)
+    if 'key' in data:
+        data['key'] = _validate_key(data['key'])
+    project = Project.objects.create(owner=request.auth, **data)
     ProjectMember.objects.create(project=project, user=request.auth, role='owner')
     return Project.objects.select_related('owner').get(pk=project.pk)
 
@@ -49,9 +64,20 @@ def update_project(request: HttpRequest, project_id: UUID, payload: ProjectUpdat
         raise HttpError(403, 'Only the owner can update this project')
 
     data = payload.dict(exclude_none=True)
-    for key, value in data.items():
-        setattr(project, key, value)
+    if 'key' in data:
+        data['key'] = _validate_key(data['key'], exclude_id=project.pk)
+    for k, v in data.items():
+        setattr(project, k, v)
     project.save()
+    return Project.objects.select_related('owner').get(pk=project.pk)
+
+
+@router.patch('/{project_id}/columns', response=ProjectOut, summary='컬럼 표시 설정')
+def update_project_columns(request: HttpRequest, project_id: UUID, payload: ProjectColumnsUpdate):
+    project = _get_project_for_user(project_id, request.auth)
+    valid_statuses = {'backlog', 'todo', 'in_progress', 'done', 'confirmed', 'cancelled'}
+    project.disabled_statuses = [s for s in payload.disabled_statuses if s in valid_statuses]
+    project.save(update_fields=['disabled_statuses'])
     return Project.objects.select_related('owner').get(pk=project.pk)
 
 

@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { dndzone, type DndEvent } from 'svelte-dnd-action';
+  import { dndzone, TRIGGERS, type DndEvent } from 'svelte-dnd-action';
+  import { get } from 'svelte/store';
   import { flip } from 'svelte/animate';
   import type { Task, TaskStatus } from '$lib/types';
   import { t } from '$lib/i18n';
+  import { draggingTask } from '$lib/stores/drag';
   import TaskCard from './TaskCard.svelte';
   import TaskModal from './TaskModal.svelte';
 
@@ -17,6 +19,7 @@
     onUpdate,
     onMove,
     onTaskCreated,
+    onDroppedOutside,
   }: {
     projectId: string;
     status: ColConfig;
@@ -25,22 +28,40 @@
     onUpdate: (status: TaskStatus, items: Task[]) => void;
     onMove: (taskId: string, toStatus: TaskStatus, newItems: Task[]) => void;
     onTaskCreated: () => void;
+    onDroppedOutside: (task: Task) => void;
   } = $props();
 
   let showCreate = $state(false);
   const FLIP_MS = 150;
 
-  // shadow item이 있으면 이 컬럼이 현재 드롭 대상
   const isDragOver = $derived(tasks.some((t: any) => t.isDndShadowItem));
 
   function handleConsider(e: CustomEvent<DndEvent<Task>>) {
-    onUpdate(status.value, e.detail.items);
+    const { items, info } = e.detail;
+    // On drag start, record which task is being dragged
+    if (info.trigger === TRIGGERS.DRAG_STARTED) {
+      const task = tasks.find((t) => t.id === info.id);
+      if (task) draggingTask.set(task);
+    }
+    onUpdate(status.value, items);
   }
 
   function handleFinalize(e: CustomEvent<DndEvent<Task>>) {
+    // Read dragging task before clearing
+    const task = get(draggingTask);
+    draggingTask.set(null);
+
     const newItems = e.detail.items;
     const taskId = e.detail.info.id as string;
+    const trigger = e.detail.info.trigger;
+
     onUpdate(status.value, newItems);
+
+    // Dropped outside all zones (e.g. on sidebar) — delegate to parent
+    if (trigger === TRIGGERS.DROPPED_OUTSIDE_OF_ANY) {
+      if (task) onDroppedOutside(task);
+      return;
+    }
 
     // Item was dragged OUT of this column — target column handles the API call
     if (!newItems.some((t) => t.id === taskId)) return;
@@ -78,7 +99,21 @@
     class="flex-1 rounded-xl p-2 min-h-[120px] transition-all {isDragOver
       ? 'bg-brand-100/50 dark:bg-brand-500/10 ring-2 ring-inset ring-brand-400 dark:ring-brand-500'
       : 'bg-slate-200/60 dark:bg-slate-800/60'}"
-    use:dndzone={{ items: tasks, flipDurationMs: FLIP_MS, type: 'task', dropTargetStyle: {} }}
+    use:dndzone={{
+      items: tasks,
+      flipDurationMs: FLIP_MS,
+      type: 'task',
+      dropTargetStyle: {},
+      transformDraggedElement: (el: HTMLElement | undefined) => {
+        if (!el) return;
+        if (!el.dataset.frozenWidth) {
+          el.dataset.frozenWidth = String(el.offsetWidth);
+        }
+        el.style.width = el.dataset.frozenWidth + 'px';
+        el.style.maxWidth = el.dataset.frozenWidth + 'px';
+        el.style.boxSizing = 'border-box';
+      },
+    }}
     onconsider={(e: CustomEvent) => handleConsider(e)}
     onfinalize={(e: CustomEvent) => handleFinalize(e)}
   >

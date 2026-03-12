@@ -1,8 +1,10 @@
+import re
 from typing import List
 from uuid import UUID
 from ninja import Router, File
 from ninja.files import UploadedFile
 from django.conf import settings
+from django.db import transaction
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
@@ -24,7 +26,16 @@ def _get_task(task_id: UUID, project: Project) -> Task:
 
 
 def _task_qs():
-    return Task.objects.select_related('assignee', 'created_by')
+    return Task.objects.select_related('assignee', 'created_by', 'project')
+
+
+@router.get('/my', response=List[TaskOut], summary='나에게 할당된 태스크')
+def my_tasks(request: HttpRequest):
+    return (
+        _task_qs()
+        .filter(assignee=request.auth, project__members=request.auth)
+        .order_by('status', 'sort_order', 'created_at')
+    )
 
 
 @router.get('/project/{project_id}', response=List[TaskOut], summary='프로젝트 태스크 목록')
@@ -35,26 +46,32 @@ def list_tasks(request: HttpRequest, project_id: UUID):
 
 @router.post('/project/{project_id}', response=TaskOut, summary='태스크 생성')
 def create_task(request: HttpRequest, project_id: UUID, payload: TaskCreate):
-    project = _get_project(project_id, request.auth)
+    with transaction.atomic():
+        project = get_object_or_404(
+            Project.objects.select_for_update(), pk=project_id, members=request.auth
+        )
+        number = project.next_task_number
+        project.next_task_number += 1
+        project.save(update_fields=['next_task_number'])
 
-    # compute sort_order: max in that status column + 1000
-    max_order = (
-        Task.objects
-        .filter(project=project, status=payload.status)
-        .order_by('-sort_order')
-        .values_list('sort_order', flat=True)
-        .first()
-    ) or 0
+        max_order = (
+            Task.objects
+            .filter(project=project, status=payload.status)
+            .order_by('-sort_order')
+            .values_list('sort_order', flat=True)
+            .first()
+        ) or 0
 
-    data = payload.dict()
-    assignee_id = data.pop('assignee_id', None)
-    task = Task.objects.create(
-        project=project,
-        created_by=request.auth,
-        sort_order=max_order + 1000,
-        assignee_id=assignee_id,
-        **data,
-    )
+        data = payload.dict()
+        assignee_id = data.pop('assignee_id', None)
+        task = Task.objects.create(
+            project=project,
+            created_by=request.auth,
+            sort_order=max_order + 1000,
+            assignee_id=assignee_id,
+            number=number,
+            **data,
+        )
     return _task_qs().get(pk=task.pk)
 
 
@@ -82,9 +99,25 @@ def move_task(request: HttpRequest, task_id: UUID, payload: TaskMove):
     task = get_object_or_404(Task, pk=task_id)
     _get_project(task.project_id, request.auth)
 
-    task.status = payload.status
-    task.sort_order = payload.sort_order
-    task.save(update_fields=['status', 'sort_order', 'updated_at'])
+    with transaction.atomic():
+        task.status = payload.status
+        task.sort_order = payload.sort_order
+        update_fields = ['status', 'sort_order', 'updated_at']
+
+        if payload.project_id and payload.project_id != task.project_id:
+            target = get_object_or_404(
+                Project.objects.select_for_update(), pk=payload.project_id, members=request.auth
+            )
+            number = target.next_task_number
+            target.next_task_number += 1
+            target.save(update_fields=['next_task_number'])
+
+            task.project = target
+            task.number = number
+            update_fields += ['project', 'number']
+
+        task.save(update_fields=update_fields)
+
     return _task_qs().get(pk=task.pk)
 
 

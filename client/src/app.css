@@ -11,6 +11,11 @@
 }
 
 @layer utilities {
+  /* Applied during theme switch to suppress transition flash */
+  .no-transitions * {
+    transition: none !important;
+  }
+
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 transparent;
@@ -18,3 +23,40 @@
   .scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
   .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
 }
+
+/* ── Black-toned dark theme ───────────────────────────────────────────────
+   html.theme-black is added alongside .dark.
+   html.theme-black selectors (element+class) beat .dark selectors (class only)
+   in specificity, so no !important needed.
+──────────────────────────────────────────────────────────────────────────── */
+
+/* Body */
+html.theme-black body { background-color: #050505; }
+
+/* Backgrounds */
+html.theme-black .dark\:bg-slate-950  { background-color: #050505; }
+html.theme-black .dark\:bg-slate-900  { background-color: #0d0d0d; }
+html.theme-black .dark\:bg-slate-800  { background-color: #1a1a1a; }
+html.theme-black .dark\:bg-slate-700  { background-color: #272727; }
+html.theme-black .dark\:bg-slate-600  { background-color: #383838; }
+
+/* Opacity variants */
+html.theme-black .dark\:bg-slate-800\/50 { background-color: rgb(26 26 26 / 0.5); }
+html.theme-black .dark\:bg-slate-800\/60 { background-color: rgb(26 26 26 / 0.6); }
+html.theme-black .dark\:bg-slate-700\/60 { background-color: rgb(39 39 39 / 0.6); }
+
+/* Hover backgrounds */
+html.theme-black .dark\:hover\:bg-slate-900:hover { background-color: #0d0d0d; }
+html.theme-black .dark\:hover\:bg-slate-800:hover { background-color: #222222; }
+html.theme-black .dark\:hover\:bg-slate-700:hover { background-color: #2e2e2e; }
+html.theme-black .dark\:hover\:bg-slate-750:hover { background-color: #252525; }
+
+/* Borders */
+html.theme-black .dark\:border-slate-800   { border-color: #1a1a1a; }
+html.theme-black .dark\:border-slate-700   { border-color: #2a2a2a; }
+html.theme-black .dark\:border-slate-700\/60 { border-color: rgb(42 42 42 / 0.6); }
+html.theme-black .dark\:border-slate-600   { border-color: #3a3a3a; }
+
+/* Scrollbar */
+html.theme-black .scrollbar-thin { scrollbar-color: #2a2a2a transparent; }
+html.theme-black .scrollbar-thin::-webkit-scrollbar-thumb { background: #2a2a2a; }

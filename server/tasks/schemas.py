@@ -27,6 +27,7 @@ class TaskUpdate(Schema):
 class TaskMove(Schema):
     status: TaskStatus
     sort_order: float
+    project_id: Optional[UUID] = None
 
 
 class AttachmentOut(Schema):
@@ -47,7 +48,13 @@ class TaskOut(Schema):
     status: str
     priority: str
     assignee: Optional[UserOut] = None
+    number: int
+    ref: str
     sort_order: float
     created_by: UserOut
     created_at: datetime
     updated_at: datetime
+
+    @staticmethod
+    def resolve_ref(obj) -> str:
+        return f"{obj.project.key}-{obj.number}"

@@ -20,6 +20,8 @@ export interface Project {
   name: string;
   description: string;
   color: string;
+  key: string;
+  disabled_statuses: TaskStatus[];
   owner: User;
   created_at: string;
   updated_at: string;
@@ -43,6 +45,8 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   assignee: User | null;
+  number: number;
+  ref: string;
   sort_order: number;
   created_by: User;
   created_at: string;

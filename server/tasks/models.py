@@ -37,6 +37,7 @@ class Task(models.Model):
         blank=True,
         related_name='assigned_tasks',
     )
+    number = models.PositiveIntegerField(default=0)  # sequential per project, assigned on create
     sort_order = models.FloatField(default=0)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

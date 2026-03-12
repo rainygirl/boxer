@@ -5,6 +5,7 @@ export interface ProjectCreate {
   name: string;
   description?: string;
   color?: string;
+  key?: string;
 }
 
 export const projectsApi = {
@@ -23,4 +24,7 @@ export const projectsApi = {
     api.patch<ProjectMember>(`/projects/${id}/members/${userId}`, { role }).then((r) => r.data),
   removeMember: (id: string, userId: number) =>
     api.delete(`/projects/${id}/members/${userId}`),
+
+  updateColumns: (id: string, disabledStatuses: string[]) =>
+    api.patch<Project>(`/projects/${id}/columns`, { disabled_statuses: disabledStatuses }).then((r) => r.data),
 };

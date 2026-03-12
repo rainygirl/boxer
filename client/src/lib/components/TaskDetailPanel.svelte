@@ -3,8 +3,11 @@
   import type { Task, TaskStatus, TaskPriority, User, TaskAttachment } from '$lib/types';
   import { TASK_STATUSES, PRIORITY_CONFIG } from '$lib/types';
   import AssigneePicker from './AssigneePicker.svelte';
+  import RichTextEditor from './RichTextEditor.svelte';
   import { t, dateLocale } from '$lib/i18n';
   import { get } from 'svelte/store';
+  import { registerPopup, closeActivePopup, popupLeft } from '$lib/stores/popup';
+  import { onMount, onDestroy } from 'svelte';
 
   const {
     task,
@@ -19,6 +22,26 @@
   let assignee = $state<User | null>(task.assignee);
   let saving = $state(false);
   let dirty = $state(false);
+  let linkCopied = $state(false);
+
+  // 패널이 열릴 때 주소창에 ?task=id 반영, 닫힐 때 복원
+  const originalUrl = window.location.href;
+  onMount(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('task', task.id);
+    history.replaceState({}, '', url.toString());
+  });
+  onDestroy(() => {
+    history.replaceState({}, '', originalUrl);
+  });
+
+  function copyPermalink() {
+    const url = new URL(window.location.href);
+    navigator.clipboard.writeText(url.toString()).then(() => {
+      linkCopied = true;
+      setTimeout(() => (linkCopied = false), 2000);
+    });
+  }
 
   // Attachments
   let attachments = $state<TaskAttachment[]>([]);
@@ -28,6 +51,45 @@
   let fileInputEl = $state<HTMLInputElement | null>(null);
 
   const statusCfg = $derived(TASK_STATUSES.find((s) => s.value === status)!);
+
+  // ── Status popup ─────────────────────────────────────────────────────────
+  let statusPopupOpen = $state(false);
+  let statusBtnEl = $state<HTMLButtonElement | null>(null);
+
+  // ── Priority popup ────────────────────────────────────────────────────────
+  let priorityPopupOpen = $state(false);
+  let priorityBtnEl = $state<HTMLButtonElement | null>(null);
+  const priorityCfg = $derived(PRIORITY_CONFIG.find((p) => p.value === priority)!);
+
+  function getPriorityPopupPos() {
+    if (!priorityBtnEl) return { top: 0, left: 0 };
+    const rect = priorityBtnEl.getBoundingClientRect();
+    const popupH = PRIORITY_CONFIG.length * 34 + 8;
+    const top = rect.bottom + 4 + popupH > window.innerHeight ? rect.top - popupH - 4 : rect.bottom + 4;
+    return { top, left: popupLeft(rect.left, 160) };
+  }
+
+  function pickPriority(p: TaskPriority) {
+    priorityPopupOpen = false;
+    priority = p;
+    dirty = true;
+    quickUpdate({ priority: p });
+  }
+
+  function getStatusPopupPos() {
+    if (!statusBtnEl) return { top: 0, left: 0 };
+    const rect = statusBtnEl.getBoundingClientRect();
+    const popupH = TASK_STATUSES.length * 34 + 8;
+    const top = rect.bottom + 4 + popupH > window.innerHeight ? rect.top - popupH - 4 : rect.bottom + 4;
+    return { top, left: popupLeft(rect.left, 150) };
+  }
+
+  function pickStatus(s: TaskStatus) {
+    statusPopupOpen = false;
+    status = s;
+    dirty = true;
+    quickUpdate({ status: s });
+  }
 
   $effect(() => {
     tasksApi.listAttachments(task.id).then((a) => (attachments = a)).catch(() => {});
@@ -106,21 +168,31 @@
   }
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && onClose()} />
+<svelte:window
+  onkeydown={(e) => e.key === 'Escape' && onClose()}
+  onclick={() => closeActivePopup()}
+/>
 
 <div class="fixed inset-0 z-50 flex">
   <div class="flex-1 bg-black/20" onclick={onClose}></div>
   <div class="w-[480px] bg-white dark:bg-slate-900 h-full shadow-2xl flex flex-col overflow-hidden border-l border-slate-200 dark:border-slate-700">
     <!-- Header -->
     <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
-      <span class="text-xs font-semibold px-2 py-0.5 rounded-full {statusCfg.color} {statusCfg.bg}">
-        {$t(`status.${statusCfg.value}` as any)}
-      </span>
-      <div class="flex items-center gap-2">
+      <span class="text-xs font-mono text-slate-400 dark:text-slate-500">{task.ref}</span>
+      <div class="flex items-center gap-1">
         <button
-          onclick={handleDelete}
-          class="text-xs text-slate-400 hover:text-red-500 transition-colors px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-500/10"
-        >{$t('task.delete')}</button>
+          onclick={copyPermalink}
+          title="링크 복사"
+          class="text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        >
+          {#if linkCopied}
+            <span class="text-xs text-green-500">✓</span>
+          {:else}
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+          {/if}
+        </button>
         <button
           onclick={onClose}
           class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -142,27 +214,32 @@
       <div class="grid grid-cols-2 gap-3">
         <div>
           <label class="block text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">{$t('task.status')}</label>
-          <select
-            bind:value={status}
-            onchange={(e) => { quickUpdate({ status: e.currentTarget.value as TaskStatus }); }}
-            class="w-full text-sm px-2.5 py-1.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          <button
+            bind:this={statusBtnEl}
+            onclick={(e) => { e.stopPropagation(); if (statusPopupOpen) { statusPopupOpen = false; closeActivePopup(); } else { statusPopupOpen = true; priorityPopupOpen = false; registerPopup(() => { statusPopupOpen = false; }); } }}
+            class="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 cursor-pointer hover:border-slate-300 dark:hover:border-slate-500 transition-colors"
           >
-            {#each TASK_STATUSES as s}
-              <option value={s.value}>{$t(`status.${s.value}` as any)}</option>
-            {/each}
-          </select>
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full {statusCfg.color} {statusCfg.bg}">
+              {$t(`status.${status}` as any)}
+            </span>
+            <svg class="w-3 h-3 text-slate-400 ml-auto shrink-0" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1,1 5,5 9,1"/>
+            </svg>
+          </button>
         </div>
         <div>
           <label class="block text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">{$t('task.priority')}</label>
-          <select
-            bind:value={priority}
-            onchange={(e) => { quickUpdate({ priority: e.currentTarget.value as TaskPriority }); }}
-            class="w-full text-sm px-2.5 py-1.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          <button
+            bind:this={priorityBtnEl}
+            onclick={(e) => { e.stopPropagation(); if (priorityPopupOpen) { priorityPopupOpen = false; closeActivePopup(); } else { priorityPopupOpen = true; statusPopupOpen = false; registerPopup(() => { priorityPopupOpen = false; }); } }}
+            class="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 cursor-pointer hover:border-slate-300 dark:hover:border-slate-500 transition-colors"
           >
-            {#each PRIORITY_CONFIG as p}
-              <option value={p.value}>{p.icon} {$t(`priority.${p.value}` as any)}</option>
-            {/each}
-          </select>
+            <span class="text-base leading-none">{priorityCfg.icon}</span>
+            <span class="text-sm text-slate-700 dark:text-slate-200">{$t(`priority.${priority}` as any)}</span>
+            <svg class="w-3 h-3 text-slate-400 ml-auto shrink-0" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1,1 5,5 9,1"/>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -176,13 +253,12 @@
 
       <div>
         <label class="block text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">{$t('task.description')}</label>
-        <textarea
-          bind:value={description}
-          oninput={() => (dirty = true)}
-          rows="6"
-          placeholder={$t('task.descriptionEditPlaceholder')}
-          class="w-full text-sm text-slate-700 dark:text-slate-200 px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
-        ></textarea>
+        <div class="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-transparent min-h-[120px]">
+          <RichTextEditor
+            value={description}
+            onChange={(html) => { description = html; dirty = true; }}
+          />
+        </div>
       </div>
 
       <!-- Attachments -->
@@ -281,8 +357,19 @@
       </div>
     </div>
 
-    {#if dirty}
-      <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+    <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 space-y-2">
+      <div class="flex justify-end">
+        <button
+          onclick={handleDelete}
+          class="flex items-center gap-1 text-[12px] text-slate-400 dark:text-slate-500 hover:text-red-400 dark:hover:text-red-400 transition-colors"
+        >
+          <svg class="w-3 h-3 shrink-0" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3.5h10M5 3.5V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v1M5.5 6v4.5M8.5 6v4.5M3 3.5l.7 7.5a.5.5 0 0 0 .5.5h5.6a.5.5 0 0 0 .5-.5L11 3.5"/>
+          </svg>
+          {$t('task.delete')}
+        </button>
+      </div>
+      {#if dirty}
         <button
           onclick={handleSave}
           disabled={saving}
@@ -290,7 +377,46 @@
         >
           {saving ? $t('task.saving') : $t('task.saveChanges')}
         </button>
-      </div>
-    {/if}
+      {/if}
+    </div>
   </div>
 </div>
+
+{#if statusPopupOpen}
+  {@const pos = getStatusPopupPos()}
+  <div
+    onclick={(e) => e.stopPropagation()}
+    style="position: fixed; top: {pos.top}px; left: {pos.left}px;"
+    class="z-[300] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-lg overflow-hidden min-w-[160px] py-1"
+  >
+    {#each TASK_STATUSES as s}
+      <button
+        onclick={() => pickStatus(s.value)}
+        class="w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-700 {status === s.value ? 'bg-slate-50 dark:bg-slate-700' : ''}"
+      >
+        <span class="inline-block px-2 py-0.5 rounded-full font-medium {s.color} {s.bg}">
+          {$t(`status.${s.value}` as any)}
+        </span>
+      </button>
+    {/each}
+  </div>
+{/if}
+
+{#if priorityPopupOpen}
+  {@const pos = getPriorityPopupPos()}
+  <div
+    onclick={(e) => e.stopPropagation()}
+    style="position: fixed; top: {pos.top}px; left: {pos.left}px;"
+    class="z-[300] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-lg overflow-hidden min-w-[150px] py-1"
+  >
+    {#each PRIORITY_CONFIG as p}
+      <button
+        onclick={() => pickPriority(p.value)}
+        class="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700 {priority === p.value ? 'bg-slate-50 dark:bg-slate-700' : ''}"
+      >
+        <span class="text-base leading-none">{p.icon}</span>
+        <span class="text-slate-700 dark:text-slate-200">{$t(`priority.${p.value}` as any)}</span>
+      </button>
+    {/each}
+  </div>
+{/if}

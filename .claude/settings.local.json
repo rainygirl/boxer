@@ -19,7 +19,18 @@
       "Bash(cd /Users/rainygirl/Workspace/boxer/server && python3 manage.py migrate 2>&1)",
       "Bash(pip3 install:*)",
       "Bash(ls /Users/rainygirl/Workspace/boxer/server/.env* 2>/dev/null)",
-      "Bash(cd /Users/rainygirl/Workspace/boxer/server && python3 -c \"from django.conf import settings; import django, os; os.environ.setdefault\\('DJANGO_SETTINGS_MODULE', 'config.settings'\\); django.setup\\(\\); print\\('CLIENT_URL:', settings.CLIENT_URL\\); print\\('R2_CONFIGURED:', settings.R2_CONFIGURED\\)\")"
+      "Bash(cd /Users/rainygirl/Workspace/boxer/server && python3 -c \"from django.conf import settings; import django, os; os.environ.setdefault\\('DJANGO_SETTINGS_MODULE', 'config.settings'\\); django.setup\\(\\); print\\('CLIENT_URL:', settings.CLIENT_URL\\); print\\('R2_CONFIGURED:', settings.R2_CONFIGURED\\)\")",
+      "Bash(cd /Users/rainygirl/Workspace/boxer/server && python3 manage.py check 2>&1)",
+      "Bash(find /Users/rainygirl/Workspace/boxer/client/src -type f \\\\\\( -name \"*.svelte\" -o -name \"*.ts\" \\\\\\) 2>/dev/null | grep -v node_modules)",
+      "Bash(python3 manage.py makemigrations projects && python3 manage.py migrate 2>&1)",
+      "Bash(node -e \"const m = require\\('./node_modules/svelte-dnd-action/dist/index.cjs'\\); console.log\\('TRIGGERS:', JSON.stringify\\(m.TRIGGERS\\)\\)\")",
+      "Bash(ls /Users/rainygirl/Workspace/boxer/client/node_modules/svelte-dnd-action/dist/ && grep -r \"TRIGGERS\" /Users/rainygirl/Workspace/boxer/client/node_modules/svelte-dnd-action/src/constants.js 2>/dev/null || find /Users/rainygirl/Workspace/boxer/client/node_modules/svelte-dnd-action -name \"*.js\" | head -5)",
+      "Bash(cd /Users/rainygirl/Workspace/boxer/server && python3 manage.py makemigrations projects tasks 2>&1)",
+      "Bash(python3 manage.py migrate 2>&1)",
+      "Bash(npx svelte-check:*)",
+      "Bash(find /Users/rainygirl/Workspace/cms -type f -name \"*edit*\" -o -name \"*editor*\" -o -name \"*content*\" 2>/dev/null | head -20)",
+      "Bash(find /Users/rainygirl/Workspace/cms/server -name \"*editor*\" -o -name \"*cms*\" | grep -E \"\\\\.\\(css|scss\\)$\")",
+      "Bash(find /Users/rainygirl/Workspace/boxer/client/src -type f \\\\\\( -name \"*.ts\" -o -name \"*.js\" \\\\\\) | xargs grep -l \"export.*t\\\\\\(\" 2>/dev/null)"
     ]
   }
 }

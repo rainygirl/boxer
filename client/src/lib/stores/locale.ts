@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 
-export type Locale = 'ko' | 'en';
+export type Locale = 'ko' | 'en' | 'ja' | 'zh-Hans' | 'zh-Hant' | 'yue' | 'es' | 'fr' | 'vi' | 'id';
 
 function createLocaleStore() {
   const initial: Locale =

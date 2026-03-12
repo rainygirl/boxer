@@ -10,14 +10,28 @@
   let name = $state('');
   let description = $state('');
   let color = $state(COLORS[0]);
+  let key = $state('');
+  let keyError = $state('');
   let saving = $state(false);
+
+  function validateKey(v: string) {
+    if (!v) return '';
+    if (!/^[A-Za-z]{1,20}$/.test(v)) return '알파벳(A-Z)만, 최대 20자';
+    return '';
+  }
 
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
     if (!name.trim()) return;
+    const trimmedKey = key.trim().toUpperCase();
+    keyError = validateKey(trimmedKey);
+    if (keyError) return;
     saving = true;
     try {
-      const project = await projectsApi.create({ name, description, color });
+      const project = await projectsApi.create({
+        name, description, color,
+        ...(trimmedKey ? { key: trimmedKey } : {}),
+      });
       await invalidate('app:projects');
       goto(`/app/project/${project.id}`);
       onClose();
@@ -33,8 +47,11 @@
   <div class="absolute inset-0 bg-black/30" onclick={onClose}></div>
   <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
     <form onsubmit={handleSubmit}>
+      <div class="flex items-center justify-between px-6 pt-5 pb-0">
+        <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">{$t('project.new')}</h2>
+        <button type="button" onclick={onClose} class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">✕</button>
+      </div>
       <div class="p-6">
-        <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-4">{$t('project.new')}</h2>
         <div class="space-y-3">
           <input
             autofocus
@@ -65,17 +82,42 @@
             </div>
           </div>
 
+          <!-- Project Key -->
+          <div>
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+              프로젝트 키 <span class="font-normal text-slate-400">(선택 · 미입력 시 자동 생성)</span>
+            </label>
+            <div class="flex items-center gap-2">
+              <input
+                type="text"
+                bind:value={key}
+                oninput={() => { key = key.toUpperCase(); keyError = validateKey(key); }}
+                maxlength="20"
+                placeholder="예: PROJ"
+                class="w-32 text-sm px-3 py-2 border rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono uppercase
+                  {keyError ? 'border-red-400' : 'border-slate-200 dark:border-slate-600'}"
+              />
+              {#if keyError}
+                <span class="text-xs text-red-500">{keyError}</span>
+              {:else if key}
+                <span class="text-xs text-slate-400 font-mono">{key.toUpperCase()}-1, {key.toUpperCase()}-2, …</span>
+              {:else}
+                <span class="text-xs text-slate-400">자동: AA-1, AA-2, …</span>
+              {/if}
+            </div>
+          </div>
+
           <div class="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
             <span class="w-3 h-3 rounded-full" style="background-color: {color}"></span>
             <span class="text-sm font-medium text-slate-700 dark:text-slate-200">{name || $t('project.previewName')}</span>
+            {#if key}
+              <span class="ml-auto text-xs font-mono text-slate-400">{key.toUpperCase()}</span>
+            {/if}
           </div>
         </div>
       </div>
 
       <div class="flex items-center justify-end gap-2 px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700">
-        <button type="button" onclick={onClose} class="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
-          {$t('common.cancel')}
-        </button>
         <button
           type="submit"
           disabled={!name.trim() || saving}

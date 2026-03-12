@@ -1,18 +1,24 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { invalidate } from '$app/navigation';
   import { viewMode } from '$lib/stores/ui';
   import { authStore } from '$lib/stores/auth';
   import { projectsApi } from '$lib/api/projects';
   import type { ProjectMember } from '$lib/types';
   import TaskModal from './TaskModal.svelte';
   import MembersModal from './MembersModal.svelte';
+  import ProjectSettingsModal from './ProjectSettingsModal.svelte';
   import { t } from '$lib/i18n';
 
   const { projectId, onTaskCreated }: { projectId: string; onTaskCreated: () => void } = $props();
 
   let showCreate = $state(false);
   let showMembers = $state(false);
+  let showSettings = $state(false);
+  let showColorPicker = $state(false);
   let members = $state<ProjectMember[]>([]);
+
+  const COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f97316','#eab308','#22c55e','#14b8a6','#3b82f6','#64748b'];
 
   const project = $derived(
     ($page.data as any)?.projects?.find((p: any) => p.id === projectId) ?? null
@@ -33,20 +39,100 @@
   });
 
   function onMembersClose() {
-    // 멤버 변경 후 다시 로드
     projectsApi.listMembers(projectId).then((m) => (members = m));
     showMembers = false;
   }
+
+  async function setColor(color: string) {
+    showColorPicker = false;
+    if (color === project?.color) return;
+    await projectsApi.update(projectId, { color });
+    await invalidate('app:projects');
+  }
 </script>
 
+<svelte:window onclick={() => { showColorPicker = false; }} />
+
 <header class="flex items-center justify-between px-6 py-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0">
-  <div class="flex items-center gap-3">
+  <!-- Left: color · name · members · settings -->
+  <div class="flex items-center gap-2">
     {#if project}
-      <span class="w-3 h-3 rounded-full" style="background-color: {project.color}"></span>
+      <!-- Color dot (owner only: clickable) -->
+      <div class="relative">
+        {#if isOwner}
+          <button
+            onclick={(e) => { e.stopPropagation(); showColorPicker = !showColorPicker; }}
+            class="w-3.5 h-3.5 rounded-full ring-2 ring-transparent hover:ring-slate-300 dark:hover:ring-slate-600 transition-all"
+            style="background-color: {project.color}"
+            title="색상 변경"
+          ></button>
+          {#if showColorPicker}
+            <div
+              onclick={(e) => e.stopPropagation()}
+              class="absolute top-full left-0 mt-2 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg p-2.5 flex flex-wrap gap-1.5 w-[136px]"
+            >
+              {#each COLORS as c}
+                <button
+                  onclick={() => setColor(c)}
+                  class="w-6 h-6 rounded-full transition-all {project.color === c ? 'ring-2 ring-offset-1 ring-slate-400 scale-110' : 'hover:scale-110'}"
+                  style="background-color: {c}"
+                ></button>
+              {/each}
+            </div>
+          {/if}
+        {:else}
+          <span class="w-3.5 h-3.5 rounded-full block" style="background-color: {project.color}"></span>
+        {/if}
+      </div>
     {/if}
+
     <h1 class="text-base font-semibold text-slate-800 dark:text-slate-100">{project?.name ?? '...'}</h1>
+
+    <!-- Member avatar stack -->
+    <button
+      onclick={() => (showMembers = true)}
+      class="flex items-center ml-1 hover:opacity-80 transition-opacity"
+      title={$t('member.manage')}
+    >
+      {#each visible as m, i (m.user.id)}
+        <div
+          class="w-5 h-5 rounded-full ring-2 ring-white dark:ring-slate-900 shrink-0 overflow-hidden -ml-1.5 first:ml-0"
+          style="z-index: {visible.length - i}"
+          title={m.user.name || m.user.email}
+        >
+          {#if m.user.avatar_url}
+            <img src={m.user.avatar_url} alt={m.user.name} class="w-full h-full object-cover" />
+          {:else}
+            <div class="w-full h-full bg-brand-400 flex items-center justify-center text-white text-[9px] font-medium">
+              {(m.user.name || m.user.email)[0].toUpperCase()}
+            </div>
+          {/if}
+        </div>
+      {/each}
+      {#if overflow > 0}
+        <div class="w-5 h-5 rounded-full ring-2 ring-white dark:ring-slate-900 bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-[9px] font-medium text-slate-600 dark:text-slate-300 -ml-1.5 shrink-0">
+          +{overflow}
+        </div>
+      {/if}
+    </button>
+
+    <!-- Settings gear (owner only) -->
+    {#if isOwner && project}
+      <button
+        onclick={() => (showSettings = true)}
+        title="프로젝트 설정"
+        class="p-1 text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </button>
+    {/if}
   </div>
 
+  <!-- Right: view toggle · create task -->
   <div class="flex items-center gap-2">
     <!-- View toggle -->
     <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
@@ -80,36 +166,6 @@
       </button>
     </div>
 
-    <!-- Member avatar stack -->
-    <button
-      onclick={() => (showMembers = true)}
-      class="flex items-center hover:opacity-80 transition-opacity"
-      title={$t('member.manage')}
-    >
-      <div class="flex items-center">
-        {#each visible as m, i (m.user.id)}
-          <div
-            class="w-5 h-5 rounded-full ring-2 ring-white dark:ring-slate-900 shrink-0 overflow-hidden -ml-1.5 first:ml-0"
-            style="z-index: {visible.length - i}"
-            title={m.user.name || m.user.email}
-          >
-            {#if m.user.avatar_url}
-              <img src={m.user.avatar_url} alt={m.user.name} class="w-full h-full object-cover" />
-            {:else}
-              <div class="w-full h-full bg-brand-400 flex items-center justify-center text-white text-[9px] font-medium">
-                {(m.user.name || m.user.email)[0].toUpperCase()}
-              </div>
-            {/if}
-          </div>
-        {/each}
-        {#if overflow > 0}
-          <div
-            class="w-5 h-5 rounded-full ring-2 ring-white dark:ring-slate-900 bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-[9px] font-medium text-slate-600 dark:text-slate-300 -ml-1.5 shrink-0"
-          >+{overflow}</div>
-        {/if}
-      </div>
-    </button>
-
     <!-- Create task -->
     <button
       onclick={() => (showCreate = true)}
@@ -135,4 +191,8 @@
     {isOwner}
     onClose={onMembersClose}
   />
+{/if}
+
+{#if showSettings && project}
+  <ProjectSettingsModal {project} onClose={() => (showSettings = false)} onOpenMembers={() => (showMembers = true)} />
 {/if}

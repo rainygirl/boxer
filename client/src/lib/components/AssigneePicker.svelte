@@ -4,13 +4,17 @@
   import { matchKorean } from '$lib/utils/hangul';
   import type { User, ProjectMember } from '$lib/types';
   import { t } from '$lib/i18n';
+  import { registerPopup } from '$lib/stores/popup';
+  import { onMount } from 'svelte';
 
   const {
     value,
     onChange,
+    initiallyOpen = false,
   }: {
     value: User | null;
     onChange: (user: User | null) => void;
+    initiallyOpen?: boolean;
   } = $props();
 
   const projectId = $derived(($page.params as any).projectId as string);
@@ -49,8 +53,11 @@
   function openDropdown() {
     open = true;
     activeIdx = -1;
+    registerPopup(() => { open = false; activeIdx = -1; });
     setTimeout(() => inputEl?.focus(), 0);
   }
+
+  onMount(() => { if (initiallyOpen) openDropdown(); });
 
   function handleBlur() {
     setTimeout(() => { open = false; activeIdx = -1; }, 150);

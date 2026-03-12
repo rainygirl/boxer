@@ -5,7 +5,7 @@
   import { tasksApi } from '$lib/api/tasks';
   import { projectsApi } from '$lib/api/projects';
   import { matchKorean } from '$lib/utils/hangul';
-  import { t } from '$lib/i18n';
+  import { t, dateLocale } from '$lib/i18n';
   import TaskDetailPanel from './TaskDetailPanel.svelte';
 
   const { task, onUpdate }: { task: Task; onUpdate: () => void } = $props();
@@ -34,6 +34,16 @@
   }
 
   const priority = $derived(PRIORITY_CONFIG.find((p) => p.value === task.priority));
+
+  function formatCreatedAt(isoStr: string, locale: string): string {
+    const d = new Date(isoStr);
+    const now = new Date();
+    const isToday = d.getFullYear() === now.getFullYear()
+      && d.getMonth() === now.getMonth()
+      && d.getDate() === now.getDate();
+    if (isToday) return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+  }
 
   const filteredMembers = $derived(
     assigneeQuery.trim()
@@ -100,19 +110,27 @@
   onkeydown={(e) => e.key === 'Enter' && (showDetail = true)}
   class="relative bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 cursor-pointer select-none hover:shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-all"
 >
+  <div class="flex items-center gap-1.5 mb-1">
+    <span class="text-[11px] font-mono font-medium text-slate-400 dark:text-slate-500">{task.ref}</span>
+  </div>
   <p class="text-sm text-slate-700 dark:text-slate-200 font-medium leading-snug line-clamp-2 mb-2">
     {task.title}
   </p>
 
   <div class="flex items-center justify-between">
-    <!-- Priority -->
-    <button
-      onclick={openPriorityMenu}
-      class="flex items-center gap-1 rounded px-0.5 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-    >
-      <span class="text-base leading-none">{priority?.icon}</span>
-      <span class="text-[12px] text-slate-500 dark:text-slate-400 leading-none">{priority ? $t(`priority.${priority.value}` as any) : ''}</span>
-    </button>
+    <!-- Priority + date -->
+    <div class="flex flex-col gap-0.5">
+      <button
+        onclick={openPriorityMenu}
+        class="flex items-center gap-1 rounded px-0.5 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+      >
+        <span class="text-base leading-none">{priority?.icon}</span>
+        <span class="text-[12px] text-slate-500 dark:text-slate-400 leading-none">{priority ? $t(`priority.${priority.value}` as any) : ''}</span>
+      </button>
+      <span class="text-[11px] text-slate-300 dark:text-slate-600 px-0.5 select-none">
+        {formatCreatedAt(task.created_at, $dateLocale)}
+      </span>
+    </div>
 
     <!-- Assignee -->
     <button

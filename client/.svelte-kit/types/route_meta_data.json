@@ -10,6 +10,11 @@
 		"src/routes/app/+layout.ts",
 		"src/routes/+layout.ts"
 	],
+	"/app/my-issues": [
+		"src/routes/app/my-issues/+page.ts",
+		"src/routes/app/+layout.ts",
+		"src/routes/+layout.ts"
+	],
 	"/app/project/[projectId]": [
 		"src/routes/app/project/[projectId]/+page.ts",
 		"src/routes/app/+layout.ts",
