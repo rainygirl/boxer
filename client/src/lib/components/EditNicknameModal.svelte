@@ -6,6 +6,7 @@
   const { onClose }: { onClose: () => void } = $props();
 
   let nameInput = $state($authStore.user?.name ?? '');
+  let roleInput = $state($authStore.user?.job_title ?? '');
   let saving = $state(false);
   let inputEl = $state<HTMLInputElement | null>(null);
 
@@ -18,7 +19,7 @@
     if (!nameInput.trim() || saving) return;
     saving = true;
     try {
-      const updated = await authApi.updateProfile(nameInput.trim());
+      const updated = await authApi.updateProfile(nameInput.trim(), roleInput.trim());
       authStore.setUser(updated);
       onClose();
     } finally {
@@ -37,14 +38,26 @@
         <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">{$t('sidebar.changeNickname')}</h2>
         <button type="button" onclick={onClose} class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">✕</button>
       </div>
-      <div class="p-6">
-        <input
-          bind:this={inputEl}
-          type="text"
-          bind:value={nameInput}
-          placeholder={$t('sidebar.nicknamePlaceholder')}
-          class="w-full text-sm px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-        />
+      <div class="p-6 space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{$t('profile.name')}</label>
+          <input
+            bind:this={inputEl}
+            type="text"
+            bind:value={nameInput}
+            placeholder={$t('sidebar.nicknamePlaceholder')}
+            class="w-full text-sm px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{$t('profile.role')}</label>
+          <input
+            type="text"
+            bind:value={roleInput}
+            placeholder={$t('profile.rolePlaceholder')}
+            class="w-full text-sm px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          />
+        </div>
       </div>
       <div class="flex items-center justify-end gap-2 px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 rounded-b-2xl">
         <button

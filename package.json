@@ -7,7 +7,10 @@
     "dev:client": "cd client && npm run dev",
     "setup:server": "cd server && pip3 install -r requirements.txt && python3 manage.py migrate",
     "setup:client": "cd client && npm install",
-    "setup": "npm run setup:server && npm run setup:client"
+    "setup": "npm run setup:server && npm run setup:client",
+    "seed": "cd server && python3 manage.py seed --reset",
+    "db:restore-sample": "cp server/boxer.sample.db server/boxer.db && echo 'Restored boxer.sample.db → boxer.db'",
+    "db:save-sample": "cp server/boxer.db server/boxer.sample.db && echo 'Saved boxer.db → boxer.sample.db'"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

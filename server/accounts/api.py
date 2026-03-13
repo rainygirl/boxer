@@ -16,6 +16,7 @@ User = get_user_model()
 
 class ProfileUpdate(Schema):
     name: str
+    job_title: str = ''
 
 
 class GoogleCallbackIn(Schema):
@@ -66,6 +67,7 @@ def google_login(request: HttpRequest, payload: GoogleCallbackIn):
         raise HttpError(400, 'No email returned from Google')
 
     # 3) Get or create user — look up by email first to find existing allauth accounts
+    is_new_user = False
     user = User.objects.filter(email=email).order_by('id').first()
     if not user:
         # Generate a safe username from the email local part
@@ -76,6 +78,7 @@ def google_login(request: HttpRequest, payload: GoogleCallbackIn):
             username = f'{base}{n}'
             n += 1
         user = User.objects.create_user(username=username, email=email)
+        is_new_user = True
 
     # Set display name from Google if not customised
     google_name = userinfo.get('name', '')
@@ -95,6 +98,12 @@ def google_login(request: HttpRequest, payload: GoogleCallbackIn):
             user.avatar_url = r2_url or picture
 
     user.save(update_fields=['email', 'first_name', 'avatar_url'])
+
+    # Auto-join public projects for new users
+    if is_new_user:
+        from projects.models import Project, ProjectMember
+        for proj in Project.objects.filter(visibility='public'):
+            ProjectMember.objects.get_or_create(project=proj, user=user, defaults={'role': 'member'})
 
     # 5) Issue JWT
     token = jwt.encode(
@@ -120,5 +129,6 @@ def update_me(request: HttpRequest, payload: ProfileUpdate):
     user = request.auth
     user.first_name = payload.name.strip()
     user.last_name = ''
-    user.save(update_fields=['first_name', 'last_name'])
+    user.job_title = payload.job_title.strip()
+    user.save(update_fields=['first_name', 'last_name', 'job_title'])
     return user

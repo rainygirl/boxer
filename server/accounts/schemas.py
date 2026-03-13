@@ -7,6 +7,7 @@ class UserOut(Schema):
     email: str
     name: str = ''
     avatar_url: Optional[str] = None
+    job_title: str = ''
 
     @staticmethod
     def resolve_name(obj):

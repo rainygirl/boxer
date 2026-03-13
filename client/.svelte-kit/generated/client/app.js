@@ -15,7 +15,8 @@ export const nodes = [
 	() => import('./nodes/11'),
 	() => import('./nodes/12'),
 	() => import('./nodes/13'),
-	() => import('./nodes/14')
+	() => import('./nodes/14'),
+	() => import('./nodes/15')
 ];
 
 export const server_loads = [];
@@ -31,7 +32,8 @@ export const dictionary = {
 		"/app/project/[projectId]/issue/[taskId]": [11,[2,3]],
 		"/auth/callback": [12],
 		"/auth/google-callback": [13],
-		"/login": [14]
+		"/error/500": [14],
+		"/login": [15]
 	};
 
 export const hooks = {

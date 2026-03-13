@@ -5,4 +5,5 @@ dist/
 *.db
 *.db-shm
 *.db-wal
+!server/boxer.sample.db
 .DS_Store

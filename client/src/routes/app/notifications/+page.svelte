@@ -4,6 +4,8 @@
   import { notificationsApi } from '$lib/api/notifications';
   import { t } from '$lib/i18n';
   import { sidebarOpen } from '$lib/stores/sidebar';
+  import { authStore } from '$lib/stores/auth';
+  import { josa } from '$lib/utils/hangul';
   import type { Notification } from '$lib/types';
 
   let notifications = $state<Notification[]>([]);
@@ -56,8 +58,10 @@
     const tr = get(t);
     const actor = n.actor?.name ?? tr('notification.someone');
     const ref = n.task_ref ?? tr('notification.anIssue');
-    if (n.type === 'mention') return tr('notification.mention', { actor, ref });
-    if (n.type === 'assigned') return tr('notification.assigned', { actor, ref });
+    const name = $authStore.user?.name ?? '';
+    const recipient_eul = name + josa(name, '을/를');
+    if (n.type === 'mention') return tr('notification.mention', { actor, ref, recipient_eul });
+    if (n.type === 'assigned') return tr('notification.assigned', { actor, ref, recipient_eul });
     return '';
   }
 </script>

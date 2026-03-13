@@ -77,6 +77,21 @@ export function buildKoreanSearchPattern(query: string): string {
   return pattern;
 }
 
+/**
+ * 마지막 글자의 받침 여부에 따라 조사를 선택합니다.
+ * josa('민준', '을/를') → '을'
+ * josa('지아', '을/를') → '를'
+ */
+export function josa(word: string, form: string): string {
+  if (!word) return form.split('/')[1] ?? form;
+  const [with_, without] = form.split('/');
+  const last = word[word.length - 1];
+  const code = last.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return without ?? with_;
+  const hasJong = (code - 0xac00) % 28 !== 0;
+  return hasJong ? with_ : without;
+}
+
 export function matchKorean(query: string, text: string): boolean {
   if (!query) return true;
   if (!text) return false;

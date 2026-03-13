@@ -77,6 +77,8 @@ class TaskActivity(models.Model):
         ('due_date_changed', 'Due Date Changed'),
         ('project_moved', 'Project Moved'),
         ('commented', 'Commented'),
+        ('github_push', 'GitHub Push'),
+        ('github_pr', 'GitHub Pull Request'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

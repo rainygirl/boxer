@@ -49,7 +49,13 @@
 	"/auth/google-callback": [
 		"src/routes/+layout.ts"
 	],
+	"/error/500": [
+		"src/routes/+layout.ts"
+	],
 	"/login": [
 		"src/routes/+layout.ts"
+	],
+	"/webhook/github/[project_id]": [
+		"src/routes/webhook/github/[project_id]/+server.ts"
 	]
 }

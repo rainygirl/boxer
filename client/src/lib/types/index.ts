@@ -6,6 +6,7 @@ export interface User {
   email: string;
   name: string;
   avatar_url: string | null;
+  job_title: string;
 }
 
 export type MemberRole = 'owner' | 'member' | 'viewer';
@@ -15,6 +16,8 @@ export interface ProjectMember {
   role: MemberRole;
 }
 
+export type ProjectVisibility = 'public' | 'private';
+
 export interface Project {
   id: string;
   name: string;
@@ -22,6 +25,7 @@ export interface Project {
   color: string;
   key: string;
   disabled_statuses: TaskStatus[];
+  visibility: ProjectVisibility;
   owner: User;
   is_favorite: boolean;
   members: ProjectMember[];
@@ -83,7 +87,7 @@ export interface TaskDependencies {
 
 export interface TaskActivity {
   id: string;
-  activity_type: 'created' | 'status_changed' | 'priority_changed' | 'assignee_changed' | 'content_edited' | 'due_date_changed' | 'project_moved';
+  activity_type: 'created' | 'status_changed' | 'priority_changed' | 'assignee_changed' | 'content_edited' | 'due_date_changed' | 'project_moved' | 'commented' | 'github_push' | 'github_pr';
   data: Record<string, any>;
   user: User | null;
   created_at: string;

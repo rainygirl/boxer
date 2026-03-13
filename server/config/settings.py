@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'accounts',
     'projects',
     'tasks',
+    'integrations',
 ]
 
 MIDDLEWARE = [

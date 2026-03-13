@@ -27,15 +27,16 @@ export {};
 
 declare module "$app/types" {
 	export interface AppTypes {
-		RouteId(): "/" | "/app" | "/app/member-issues" | "/app/member-issues/[userId]" | "/app/members" | "/app/my-issues" | "/app/notifications" | "/app/project" | "/app/project/[projectId]" | "/app/project/[projectId]/issue" | "/app/project/[projectId]/issue/[taskId]" | "/auth" | "/auth/callback" | "/auth/google-callback" | "/login";
+		RouteId(): "/" | "/app" | "/app/member-issues" | "/app/member-issues/[userId]" | "/app/members" | "/app/my-issues" | "/app/notifications" | "/app/project" | "/app/project/[projectId]" | "/app/project/[projectId]/issue" | "/app/project/[projectId]/issue/[taskId]" | "/auth" | "/auth/callback" | "/auth/google-callback" | "/error" | "/error/500" | "/login" | "/webhook" | "/webhook/github" | "/webhook/github/[project_id]";
 		RouteParams(): {
 			"/app/member-issues/[userId]": { userId: string };
 			"/app/project/[projectId]": { projectId: string };
 			"/app/project/[projectId]/issue": { projectId: string };
-			"/app/project/[projectId]/issue/[taskId]": { projectId: string; taskId: string }
+			"/app/project/[projectId]/issue/[taskId]": { projectId: string; taskId: string };
+			"/webhook/github/[project_id]": { project_id: string }
 		};
 		LayoutParams(): {
-			"/": { userId?: string; projectId?: string; taskId?: string };
+			"/": { userId?: string; projectId?: string; taskId?: string; project_id?: string };
 			"/app": { userId?: string; projectId?: string; taskId?: string };
 			"/app/member-issues": { userId?: string };
 			"/app/member-issues/[userId]": { userId: string };
@@ -49,10 +50,15 @@ declare module "$app/types" {
 			"/auth": Record<string, never>;
 			"/auth/callback": Record<string, never>;
 			"/auth/google-callback": Record<string, never>;
-			"/login": Record<string, never>
+			"/error": Record<string, never>;
+			"/error/500": Record<string, never>;
+			"/login": Record<string, never>;
+			"/webhook": { project_id?: string };
+			"/webhook/github": { project_id?: string };
+			"/webhook/github/[project_id]": { project_id: string }
 		};
-		Pathname(): "/" | "/app" | `/app/member-issues/${string}` & {} | "/app/members" | "/app/my-issues" | "/app/notifications" | `/app/project/${string}` & {} | `/app/project/${string}/issue/${string}` & {} | "/auth/callback" | "/auth/google-callback" | "/login";
+		Pathname(): "/" | "/app" | `/app/member-issues/${string}` & {} | "/app/members" | "/app/my-issues" | "/app/notifications" | `/app/project/${string}` & {} | `/app/project/${string}/issue/${string}` & {} | "/auth/callback" | "/auth/google-callback" | "/error/500" | "/login" | `/webhook/github/${string}` & {};
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
-		Asset(): string & {};
+		Asset(): "/500.gif" | string & {};
 	}
 }

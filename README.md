@@ -1,24 +1,24 @@
 # 📦 Boxer
 
-> 🇰🇷 칸반 보드, 목록 뷰, 멤버 관리, 알림, Google OAuth 로그인을 갖춘 오픈소스 프로젝트 관리 도구.
->
-> 🇺🇸 Open source project management tool with Kanban board, list view, member management, notifications, and Google OAuth login.
->
-> 🇪🇸 Herramienta de gestión de proyectos de código abierto con tablero Kanban, vista de lista, gestión de miembros, notificaciones e inicio de sesión con Google OAuth.
->
-> 🇫🇷 Outil de gestion de projets open source avec tableau Kanban, vue liste, gestion des membres, notifications et connexion Google OAuth.
->
-> 🇯🇵 カンバンボード、リストビュー、メンバー管理、通知、Google OAuthログインを備えたオープンソースのプロジェクト管理ツール。
->
-> 🇨🇳 开源项目管理工具，支持看板视图、列表视图、成员管理、通知和 Google OAuth 登录。
->
-> 🇹🇼 開源專案管理工具，支援看板檢視、清單檢視、成員管理、通知與 Google OAuth 登入。
->
-> 🇭🇰 開源項目管理工具，支持睇板、清單、成員管理、通知同 Google OAuth 登入。
->
-> 🇻🇳 Công cụ quản lý dự án mã nguồn mở với bảng Kanban, chế độ xem danh sách, quản lý thành viên, thông báo và đăng nhập Google OAuth.
->
-> 🇮🇩 Alat manajemen proyek open source dengan papan Kanban, tampilan daftar, manajemen anggota, notifikasi, dan login Google OAuth.
+🇰🇷 칸반 보드, 목록 뷰, 멤버 관리, 알림, Google OAuth 로그인을 갖춘 오픈소스 프로젝트 관리 도구.
+
+🇺🇸 Open source project management tool with Kanban board, list view, member management, notifications, and Google OAuth login.
+
+🇪🇸 Herramienta de gestión de proyectos de código abierto con tablero Kanban, vista de lista, gestión de miembros, notificaciones e inicio de sesión con Google OAuth.
+
+🇫🇷 Outil de gestion de projets open source avec tableau Kanban, vue liste, gestion des membres, notifications et connexion Google OAuth.
+
+🇯🇵 カンバンボード、リストビュー、メンバー管理、通知、Google OAuthログインを備えたオープンソースのプロジェクト管理ツール。
+
+🇨🇳 开源项目管理工具，支持看板视图、列表视图、成员管理、通知和 Google OAuth 登录。
+
+🇹🇼 開源專案管理工具，支援看板檢視、清單檢視、成員管理、通知與 Google OAuth 登入。
+
+🇭🇰 開源項目管理工具，支持睇板、清單、成員管理、通知同 Google OAuth 登入。
+
+🇻🇳 Công cụ quản lý dự án mã nguồn mở với bảng Kanban, chế độ xem danh sách, quản lý thành viên, thông báo và đăng nhập Google OAuth.
+
+🇮🇩 Alat manajemen proyek open source dengan papan Kanban, tampilan daftar, manajemen anggota, notifikasi, dan login Google OAuth.
 
 ---
 
@@ -34,6 +34,54 @@
 - 🇭🇰 粵語
 - 🇻🇳 Tiếng Việt
 - 🇮🇩 Bahasa Indonesia
+
+---
+
+## Features
+
+**Tasks**
+- Kanban board and table list view with drag-and-drop reordering
+- 6 status types · 5 priority levels · assignee · due date
+- Subtasks with completion percentage display
+- Task dependencies (blocks / blocked by) with circular dependency detection
+- File attachments via Cloudflare R2 (up to 50 MB per file)
+- Activity history log tracking all changes with user attribution
+- Comments with @mention support
+- Auto-numbered task references (e.g. `PROJ-42`)
+
+**Projects**
+- Multiple projects with custom name, color, and key
+- Configurable kanban columns (show/hide per project)
+- Favorite projects for quick access
+- Reports: status distribution, cycle time, assignee workload, 30-day progress chart
+
+**Team**
+- Invite members by email · role management (owner / member / viewer)
+- Global members directory across all projects
+- Per-member issue view
+
+**Notifications**
+- In-app notifications for task assignment and @mentions
+- Unread badge · mark all as read
+
+**Search**
+- Global search across all tasks by title or reference
+
+**GitHub Integration**
+- Connect a GitHub repository to each project
+- Incoming webhooks: commits and pull requests referencing task IDs (e.g. `PROJ-42`) are logged in the activity history
+- Auto-close tasks on PR merge using keywords: `fixes`, `closes`, or `resolves` followed by the task reference
+
+**Outgoing Webhooks**
+- Per-project outgoing webhook endpoints with custom URL, secret, and event filter
+- Events: `task.created`, `task.updated`, `task.status_changed`, `task.comment`
+- HMAC-SHA256 signatures via `X-Boxer-Signature-256` header for payload verification
+- Dispatched asynchronously (non-blocking fire-and-forget)
+
+**UX**
+- Dark mode (light / blue / black themes)
+- Fully responsive (mobile sidebar, adaptive layout)
+- 10 languages supported
 
 ---
 
@@ -301,6 +349,7 @@ python3 manage.py createsuperuser
 | `DEBUG` | No | `True` (default) or `False` for production |
 | `ALLOWED_HOSTS` | No | Comma-separated hostnames (default: `localhost,127.0.0.1`) |
 | `CLIENT_URL` | No | Frontend origin for CORS (default: `http://localhost:5173`) |
+| `BACKEND_URL` | No | Internal Django URL for SvelteKit → Django webhook proxy (default: `http://127.0.0.1:4000`) |
 | `R2_ACCOUNT_ID` | No | Cloudflare R2 account ID (file attachments) |
 | `R2_ACCESS_KEY_ID` | No | Cloudflare R2 access key |
 | `R2_SECRET_ACCESS_KEY` | No | Cloudflare R2 secret key |

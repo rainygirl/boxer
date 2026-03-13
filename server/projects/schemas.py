@@ -10,6 +10,7 @@ class ProjectCreate(Schema):
     description: str = ''
     color: str = '#6366f1'
     key: Optional[str] = None  # auto-generated if omitted
+    visibility: str = 'private'
 
 
 class ProjectUpdate(Schema):
@@ -17,6 +18,7 @@ class ProjectUpdate(Schema):
     description: Optional[str] = None
     color: Optional[str] = None
     key: Optional[str] = None
+    visibility: Optional[str] = None
 
 
 class ProjectColumnsUpdate(Schema):
@@ -30,6 +32,7 @@ class ProjectOut(Schema):
     color: str
     key: str
     disabled_statuses: list[str]
+    visibility: str
     owner: UserOut
     is_favorite: bool = False
     members: list['ProjectMemberOut'] = []

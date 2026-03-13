@@ -46,8 +46,11 @@ class Project(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, default='')
     color = models.CharField(max_length=7, default='#6366f1')
+    VISIBILITY_CHOICES = [('public', 'Public'), ('private', 'Private')]
+
     disabled_statuses = models.JSONField(default=list, blank=True)
     key = models.CharField(max_length=20, unique=True, blank=True)
+    visibility = models.CharField(max_length=10, choices=VISIBILITY_CHOICES, default='private')
     next_task_number = models.PositiveIntegerField(default=1)
     members = models.ManyToManyField(
         settings.AUTH_USER_MODEL,

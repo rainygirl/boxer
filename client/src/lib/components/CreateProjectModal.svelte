@@ -12,6 +12,7 @@
   let color = $state(COLORS[0]);
   let key = $state('');
   let keyError = $state('');
+  let visibility = $state<'public' | 'private'>('private');
   let saving = $state(false);
 
   function validateKey(v: string) {
@@ -29,7 +30,7 @@
     saving = true;
     try {
       const project = await projectsApi.create({
-        name, description, color,
+        name, description, color, visibility,
         ...(trimmedKey ? { key: trimmedKey } : {}),
       });
       await invalidate('app:projects');
@@ -78,6 +79,27 @@
                   class="w-7 h-7 rounded-full transition-all {color === c ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-105'}"
                   style="background-color: {c}"
                 ></button>
+              {/each}
+            </div>
+          </div>
+
+          <!-- Visibility -->
+          <div>
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{$t('project.visibility')}</label>
+            <div class="grid grid-cols-2 gap-2">
+              {#each (['public', 'private'] as const) as v}
+                <button
+                  type="button"
+                  onclick={() => (visibility = v)}
+                  class="flex flex-col items-start gap-0.5 p-2.5 rounded-lg border text-left transition-all
+                    {visibility === v
+                      ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/20 dark:border-brand-400'
+                      : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'}"
+                >
+                  <span class="text-base leading-none">{v === 'public' ? '🌐' : '🔒'}</span>
+                  <span class="text-xs font-medium text-slate-700 dark:text-slate-200 mt-1">{$t(`project.visibility${v === 'public' ? 'Public' : 'Private'}`)}</span>
+                  <span class="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">{$t(`project.visibility${v === 'public' ? 'Public' : 'Private'}Desc`)}</span>
+                </button>
               {/each}
             </div>
           </div>

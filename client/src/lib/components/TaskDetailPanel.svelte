@@ -225,6 +225,21 @@
       }
       case 'commented':
         return translate('activity.commented');
+      case 'github_push': {
+        const msg = act.data?.message ?? '';
+        const url = act.data?.url ?? '';
+        const author = act.data?.author ?? '';
+        const short = msg.split('\n')[0].slice(0, 72);
+        const link = url ? `<a href="${url}" target="_blank" rel="noopener" class="text-brand-600 dark:text-brand-400 hover:underline font-mono text-[11px]">${act.data?.ref ?? ''}</a>` : (act.data?.ref ?? '');
+        return `🔀 ${link} <span class="text-slate-500 dark:text-slate-400">${short}</span>${author ? ` · ${author}` : ''}`;
+      }
+      case 'github_pr': {
+        const url = act.data?.url ?? '';
+        const msg = act.data?.message ?? '';
+        const short = msg.split('\n')[0].slice(0, 72);
+        const link = url ? `<a href="${url}" target="_blank" rel="noopener" class="text-brand-600 dark:text-brand-400 hover:underline">PR</a>` : 'PR';
+        return `🔀 ${link} <span class="text-slate-500 dark:text-slate-400">${short}</span>`;
+      }
       default:
         return act.activity_type;
     }

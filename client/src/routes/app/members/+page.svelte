@@ -66,6 +66,9 @@
           {/if}
           <div class="min-w-0 w-full">
             <p class="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{m.name}</p>
+            {#if (m as any).job_title}
+              <p class="text-xs font-medium text-brand-500 dark:text-brand-400 truncate">{(m as any).job_title}</p>
+            {/if}
             <p class="text-xs text-slate-400 dark:text-slate-500 truncate">{m.email}</p>
           </div>
         </a>

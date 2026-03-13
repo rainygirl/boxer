@@ -16,7 +16,7 @@
 
   // ── Card 0: Recent Issues ─────────────────────────────────────────────
   const recentIssues = $derived(
-    [...tasks].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()).slice(0, 8)
+    [...tasks].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()).slice(0, 5)
   );
 
   // ── Card 0b: Upcoming Due Dates ───────────────────────────────────────
@@ -28,7 +28,7 @@
       .filter((t) => t.due_date && !['done', 'confirmed', 'cancelled'].includes(t.status))
       .map((t) => ({ ...t, dueMs: new Date(t.due_date! + 'T00:00:00').getTime() }))
       .sort((a, b) => a.dueMs - b.dueMs)
-      .slice(0, 8)
+      .slice(0, 5)
   );
 
   // ── Card 1: Cycle Time ───────────────────────────────────────────────
@@ -64,7 +64,7 @@
       if (existing) existing.count++;
       else map.set(key, { count: 1, user: task.assignee ?? null });
     }
-    const sorted = [...map.values()].sort((a, b) => b.count - a.count).slice(0, 8);
+    const sorted = [...map.values()].sort((a, b) => b.count - a.count);
     const max = sorted[0]?.count ?? 1;
     return { rows: sorted, max };
   });

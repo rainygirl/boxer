@@ -15,8 +15,13 @@
   const { data } = $props();
 
   let tasks = $state<Task[]>(data.tasks);
-  const projects: Project[] = data.projects;
-  const targetUser = data.targetUser as User | null;
+  let projects = $derived<Project[]>(data.projects);
+  let targetUser = $derived<User | null>(data.targetUser as User | null);
+
+  // 다른 멤버로 이동할 때 tasks를 재동기화
+  $effect(() => {
+    tasks = data.tasks;
+  });
 
   // ── View mode ─────────────────────────────────────────────────────────────
   const VIEW_KEY = 'boxer:member-issues-view';
@@ -330,9 +335,14 @@
           {/if}
         </div>
       {/if}
-      <h1 class="text-base font-semibold text-slate-800 dark:text-slate-100">
-        {targetUser?.name ?? '...'}의 이슈
-      </h1>
+      <div>
+        <h1 class="text-base font-semibold text-slate-800 dark:text-slate-100">
+          {targetUser?.name ?? '...'}의 이슈
+        </h1>
+        {#if targetUser?.job_title}
+          <p class="text-xs text-slate-400 dark:text-slate-500">{targetUser.job_title}</p>
+        {/if}
+      </div>
     </div>
     <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
       <button

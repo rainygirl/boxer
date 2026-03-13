@@ -49,8 +49,11 @@
       {$t('login.continue')}
     </button>
 
-    <p class="text-xs text-slate-400 mt-6">
-      {$t('login.terms')}
+    <p class="mt-6 mb-1">
+      <a href="https://rainygirl.com" target="_blank" rel="noopener noreferrer" class="text-xs text-slate-400 hover:text-slate-600 transition-colors">Made by rainygirl.com</a>
+    </p>
+    <p class="mb-2">
+      <a href="https://github.com/rainygirl/boxer" target="_blank" rel="noopener noreferrer" class="text-xs text-slate-400 hover:text-slate-600 transition-colors">github.com/rainygirl/boxer</a>
     </p>
   </div>
 </div>

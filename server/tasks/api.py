@@ -18,8 +18,20 @@ router = Router()
 User = get_user_model()
 
 
+def _dispatch(project_id, event_type, payload):
+    try:
+        from integrations.dispatcher import dispatch_webhook
+        dispatch_webhook(str(project_id), event_type, payload)
+    except Exception:
+        pass
+
+
 def _get_project(project_id: UUID, user) -> Project:
-    return get_object_or_404(Project, pk=project_id, members=user)
+    from django.db.models import Q
+    return get_object_or_404(
+        Project.objects.filter(Q(members=user) | Q(visibility='public')).distinct(),
+        pk=project_id,
+    )
 
 
 def _get_task(task_id: UUID, project: Project) -> Task:
@@ -37,9 +49,11 @@ def _task_qs():
 
 @router.get('/my', response=List[TaskOut], summary='나에게 할당된 태스크')
 def my_tasks(request: HttpRequest):
+    from django.db.models import Q
+    accessible = Project.objects.filter(Q(members=request.auth) | Q(visibility='public')).values_list('id', flat=True)
     return (
         _task_qs()
-        .filter(assignee=request.auth, project__members=request.auth, parent_task__isnull=True)
+        .filter(assignee=request.auth, project_id__in=accessible, parent_task__isnull=True)
         .order_by('status', 'sort_order', 'created_at')
     )
 
@@ -47,12 +61,13 @@ def my_tasks(request: HttpRequest):
 @router.get('/by-user/{user_id}', response=List[TaskOut], summary='특정 유저 태스크 목록')
 def user_tasks(request: HttpRequest, user_id: int):
     target_user = get_object_or_404(User, pk=user_id)
-    # Only return tasks in projects where both the requester and target are members
+    # Only return tasks in projects accessible to the requester that also include the target
     from django.db.models import Q
     shared_project_ids = (
         Project.objects
-        .filter(members=request.auth)
-        .filter(members=target_user)
+        .filter(Q(members=request.auth) | Q(visibility='public'))
+        .filter(Q(members=target_user) | Q(visibility='public'))
+        .distinct()
         .values_list('id', flat=True)
     )
     return (
@@ -73,7 +88,7 @@ def search_tasks(request: HttpRequest, q: str = ''):
     qs = (
         Task.objects
         .select_related('project')
-        .filter(project__members=request.auth, parent_task__isnull=True)
+        .filter(project_id__in=Project.objects.filter(Q(members=request.auth) | Q(visibility='public')).values_list('id', flat=True), parent_task__isnull=True)
     )
     # Filter by title or ref (ref is <key>-<number>)
     from django.db.models import Q, Value, CharField
@@ -132,7 +147,16 @@ def create_task(request: HttpRequest, project_id: UUID, payload: TaskCreate):
                     task=task,
                 )
 
-    return _task_qs().get(pk=task.pk)
+    result = _task_qs().get(pk=task.pk)
+    _dispatch(project.id, 'task.created', {
+        'task_id': str(task.id),
+        'task_ref': f'{project.key}-{task.number}',
+        'task_title': task.title,
+        'status': task.status,
+        'priority': task.priority,
+        'assignee': task.assignee.display_name if task.assignee else None,
+    })
+    return result
 
 
 @router.get('/{task_id}', response=TaskOut, summary='태스크 상세')
@@ -213,7 +237,21 @@ def update_task(request: HttpRequest, task_id: UUID, payload: TaskUpdate):
             task=task,
         )
 
-    return _task_qs().get(pk=task.pk)
+    result = _task_qs().get(pk=task.pk)
+    _dispatch(task.project_id, 'task.updated', {
+        'task_id': str(task.id),
+        'task_ref': f'{task.project.key}-{task.number}',
+        'task_title': task.title,
+        'changes': list(data.keys()),
+    })
+    if any(a.activity_type == 'status_changed' for a in activities):
+        _dispatch(task.project_id, 'task.status_changed', {
+            'task_id': str(task.id),
+            'task_ref': f'{task.project.key}-{task.number}',
+            'task_title': task.title,
+            'status': task.status,
+        })
+    return result
 
 
 @router.patch('/{task_id}/move', response=TaskOut, summary='태스크 이동 (칸반 드래그)')
@@ -446,6 +484,13 @@ def create_comment(request: HttpRequest, task_id: UUID, payload: CommentCreate):
                         )
                     break
 
+    _dispatch(task.project_id, 'task.comment', {
+        'task_id': str(task.id),
+        'task_ref': f'{task.project.key}-{task.number}',
+        'task_title': task.title,
+        'comment_id': str(comment.id),
+        'author': request.auth.display_name,
+    })
     return comment
 
 

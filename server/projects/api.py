@@ -30,10 +30,10 @@ router = Router()
 
 
 def _get_project_for_user(pk: UUID, user) -> Project:
+    from django.db.models import Q
     return get_object_or_404(
-        Project,
+        Project.objects.filter(Q(members=user) | Q(visibility='public')).distinct(),
         pk=pk,
-        members=user,
     )
 
 
@@ -44,9 +44,11 @@ def _annotate_favorites(qs, user):
 
 @router.get('', response=List[ProjectOut], summary='내 프로젝트 목록')
 def list_projects(request: HttpRequest):
+    from django.db.models import Q
     qs = (
         Project.objects
-        .filter(members=request.auth)
+        .filter(Q(members=request.auth) | Q(visibility='public'))
+        .distinct()
         .select_related('owner')
         .prefetch_related('memberships__user')
     )
