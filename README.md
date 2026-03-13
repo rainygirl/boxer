@@ -1,24 +1,26 @@
 # 📦 Boxer
 
-🇰🇷 칸반 보드, 목록 뷰, 멤버 관리, 알림, Google OAuth 로그인을 갖춘 오픈소스 프로젝트 관리 도구.
+🇰🇷 칸반 보드, 목록 뷰, 멤버 관리, 알림, Google OAuth 로그인을 갖춘 오픈소스 설치형 이슈 트래커.
 
-🇺🇸 Open source project management tool with Kanban board, list view, member management, notifications, and Google OAuth login.
+🇺🇸 Open source self-hosted issue tracker with Kanban board, list view, member management, notifications, and Google OAuth login.
 
-🇪🇸 Herramienta de gestión de proyectos de código abierto con tablero Kanban, vista de lista, gestión de miembros, notificaciones e inicio de sesión con Google OAuth.
+🇪🇸 Rastreador de incidencias de código abierto autoalojado con tablero Kanban, vista de lista, gestión de miembros, notificaciones e inicio de sesión con Google OAuth.
 
-🇫🇷 Outil de gestion de projets open source avec tableau Kanban, vue liste, gestion des membres, notifications et connexion Google OAuth.
+🇫🇷 Outil de suivi d'incidents open source auto-hébergé avec tableau Kanban, vue liste, gestion des membres, notifications et connexion Google OAuth.
 
-🇯🇵 カンバンボード、リストビュー、メンバー管理、通知、Google OAuthログインを備えたオープンソースのプロジェクト管理ツール。
+🇯🇵 カンバンボード、リストビュー、メンバー管理、通知、Google OAuthログインを備えたオープンソースのセルフホスト型イシュートラッカー。
 
-🇨🇳 开源项目管理工具，支持看板视图、列表视图、成员管理、通知和 Google OAuth 登录。
+🇨🇳 开源自托管问题追踪工具，支持看板视图、列表视图、成员管理、通知和 Google OAuth 登录。
 
-🇹🇼 開源專案管理工具，支援看板檢視、清單檢視、成員管理、通知與 Google OAuth 登入。
+🇹🇼 開源自托管問題追蹤工具，支援看板檢視、清單檢視、成員管理、通知與 Google OAuth 登入。
 
-🇭🇰 開源項目管理工具，支持睇板、清單、成員管理、通知同 Google OAuth 登入。
+🇭🇰 開源自架問題追蹤工具，支援睇板、清單、成員管理、通知同 Google OAuth 登入。
 
-🇻🇳 Công cụ quản lý dự án mã nguồn mở với bảng Kanban, chế độ xem danh sách, quản lý thành viên, thông báo và đăng nhập Google OAuth.
+🇻🇳 Công cụ theo dõi sự cố mã nguồn mở tự lưu trữ với bảng Kanban, chế độ xem danh sách, quản lý thành viên, thông báo và đăng nhập Google OAuth.
 
-🇮🇩 Alat manajemen proyek open source dengan papan Kanban, tampilan daftar, manajemen anggota, notifikasi, dan login Google OAuth.
+🇮🇩 Pelacak isu open source yang dapat dihosting sendiri dengan papan Kanban, tampilan daftar, manajemen anggota, notifikasi, dan login Google OAuth.
+
+**Demo:** https://boxer.coroke.net
 
 ---
 
