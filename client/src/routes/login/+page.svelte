@@ -6,6 +6,7 @@
   import { api } from '$lib/api/client';
 
   let clientId = $state('');
+  let loaded = $state(false);
 
   onMount(async () => {
     if ($authStore.token) { goto('/app', { replaceState: true }); return; }
@@ -13,6 +14,7 @@
       const res = await api.get<{ client_id: string }>('/auth/google-config');
       clientId = res.data.client_id;
     } catch {}
+    loaded = true;
   });
 
   function loginWithGoogle() {
@@ -30,10 +32,27 @@
 </script>
 
 <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-slate-100">
-  <div class="bg-white rounded-2xl shadow-xl p-10 w-full max-w-sm text-center">
+  <div class="bg-white rounded-2xl shadow-xl p-10 w-full text-center" class:max-w-sm={!loaded || clientId} class:max-w-xl={loaded && !clientId}>
     <div class="text-5xl mb-4">📦</div>
     <h1 class="text-2xl font-bold text-slate-800 mb-1">Boxer</h1>
     <p class="text-slate-500 text-sm mb-8">{$t('login.subtitle')}</p>
+
+    {#if loaded && !clientId}
+      <div class="mb-6 text-left bg-amber-50 border border-amber-200 rounded-xl p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-amber-500 text-lg">⚠️</span>
+          <h2 class="font-semibold text-amber-800">{$t('login.setupRequired')}</h2>
+        </div>
+        <p class="setup-text text-sm text-amber-700 mb-4">{@html $t('login.setupDesc')}</p>
+        <ol class="setup-text list-decimal list-inside space-y-2 text-sm text-slate-700 mb-4">
+          <li>{@html $t('login.setupStep1')}</li>
+          <li>{@html $t('login.setupStep2')}</li>
+          <li>{@html $t('login.setupStep3')}</li>
+        </ol>
+        <pre class="bg-slate-900 text-green-400 text-xs rounded-lg p-4 text-left overflow-x-auto">GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret</pre>
+      </div>
+    {/if}
 
     <button
       onclick={loginWithGoogle}
@@ -57,3 +76,15 @@
     </p>
   </div>
 </div>
+
+<style>
+  :global(.setup-text code) {
+    background-color: #fef3c7;
+    color: #92400e;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-family: ui-monospace, monospace;
+    word-break: break-all;
+  }
+</style>
