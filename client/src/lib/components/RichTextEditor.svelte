@@ -157,7 +157,7 @@
 
   function emit() {
     if (!editorEl) return;
-    onChange(sanitizeHtml(editorEl.innerHTML));
+    onChange(sanitizeHtml(editorEl.innerHTML).replace(/\u200B/g, ''));
   }
 
   // ── Heading shortcut (# + Space) ─────────────────────────────────────────
@@ -172,32 +172,79 @@
     return true;
   }
 
+  // ── URL auto-link (Space or Enter after a URL) ───────────────────────────
+  function tryAutoLink(): boolean {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount || !sel.getRangeAt(0).collapsed) return false;
+    const range = sel.getRangeAt(0);
+    const { startContainer, startOffset } = range;
+    if (startContainer.nodeType !== Node.TEXT_NODE) return false;
+
+    // Skip if already inside an <a>
+    let n: Node | null = startContainer.parentNode;
+    while (n && n !== editorEl) {
+      if (n instanceof HTMLAnchorElement) return false;
+      n = n.parentNode;
+    }
+
+    const textBefore = (startContainer.textContent || '').slice(0, startOffset);
+    // Find a URL ending exactly at the cursor
+    const urlMatch = textBefore.match(/https?:\/\/\S+$/);
+    if (!urlMatch) return false;
+
+    // Strip trailing punctuation that isn't part of the URL
+    let url = urlMatch[0].replace(/[.,;:!?'")>\]]+$/, '');
+    if (url.length < 9) return false; // shorter than https://x
+
+    const textNode = startContainer as Text;
+    const fullText = textNode.textContent!;
+    const urlStartInFull = startOffset - urlMatch[0].length;
+    const before = fullText.slice(0, urlStartInFull);
+    // keep stripped trailing punct + anything after cursor as plain text
+    const after = urlMatch[0].slice(url.length) + fullText.slice(startOffset);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = url;
+
+    const afterNode = document.createTextNode(after);
+    const parent = textNode.parentNode!;
+    if (before) parent.insertBefore(document.createTextNode(before), textNode);
+    parent.insertBefore(a, textNode);
+    parent.insertBefore(afterNode, textNode);
+    parent.removeChild(textNode);
+
+    // Place cursor at start of afterNode so the trigger key (space/enter) lands there
+    const newRange = document.createRange();
+    newRange.setStart(afterNode, 0);
+    newRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+    return true;
+  }
+
   // ── Bold shortcut (**text**) ──────────────────────────────────────────────
   function tryBoldShortcut(block: HTMLElement): boolean {
     const html = block.innerHTML;
     if (!/\*\*(.+?)\*\*/.test(html)) return false;
-    const CURSOR = '\x00C\x00';
-    const replaced = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-    const lastClose = replaced.lastIndexOf('</b>');
-    const marked = lastClose !== -1
-      ? replaced.slice(0, lastClose + 4) + CURSOR + replaced.slice(lastClose + 4)
-      : replaced + CURSOR;
-    block.innerHTML = marked;
-    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
-    while (walker.nextNode()) {
-      const tn = walker.currentNode as Text;
-      const idx = (tn.textContent || '').indexOf(CURSOR);
-      if (idx !== -1) {
-        tn.textContent = tn.textContent!.replace(CURSOR, '');
-        const r = document.createRange();
-        r.setStart(tn, idx);
-        r.collapse(true);
-        window.getSelection()?.removeAllRanges();
-        window.getSelection()?.addRange(r);
-        return true;
-      }
+    block.innerHTML = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    // Place cursor outside <b> by inserting a zero-width space anchor after it
+    const bEls = block.querySelectorAll('b');
+    const lastB = bEls[bEls.length - 1];
+    const r = document.createRange();
+    if (lastB) {
+      const anchor = document.createTextNode('\u200B');
+      lastB.after(anchor);
+      r.setStart(anchor, 1); // position 1 = after the ZWS, definitively outside <b>
+    } else {
+      r.selectNodeContents(block);
+      r.collapse(false);
     }
-    setCursorAtEnd(block);
+    r.collapse(true);
+    window.getSelection()?.removeAllRanges();
+    window.getSelection()?.addRange(r);
     return true;
   }
 
@@ -249,6 +296,7 @@
       e.preventDefault();
       if (e.isComposing) { pendingEnter = true; return; }
       if (skipNextEnter) { skipNextEnter = false; return; }
+      if (tryAutoLink()) emit();
       doEnterSplit();
       return;
     }
@@ -258,6 +306,10 @@
         e.preventDefault();
         emit();
         return;
+      }
+      if (tryAutoLink()) {
+        // space will be inserted normally after the link by the browser
+        emit();
       }
     }
 
@@ -301,24 +353,222 @@
     emit();
   }
 
+  // ── Paste helpers ─────────────────────────────────────────────────────────
+  function escHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function escAttr(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  }
+
+  /**
+   * Returns true if the link label looks like obfuscated/garbled content
+   * (e.g. Facebook's anti-scraping timestamp encoding).
+   * Heuristic: 2+ tokens that mix letters and digits within the same word.
+   */
+  function isGarbledLabel(label: string): boolean {
+    const text = label.replace(/\*+/g, '').trim();
+    const mixedTokens = text.split(/\s+/).filter((w) => w.length >= 3 && /[a-zA-Z]/.test(w) && /\d/.test(w));
+    return mixedTokens.length >= 2;
+  }
+
+  /** Convert pasted HTML to a safe markdown string, then parse that. */
+  function htmlToMarkdown(html: string): string {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+
+    function nodeToMd(node: Node): string {
+      if (node.nodeType === Node.TEXT_NODE) return node.textContent || '';
+      if (!(node instanceof HTMLElement)) return '';
+      const tag = node.tagName;
+      if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'IFRAME' || tag === 'NOSCRIPT') return '';
+      const inner = () => Array.from(node.childNodes).map(nodeToMd).join('');
+      if (/^H[1-6]$/.test(tag)) {
+        const hashes = '#'.repeat(Math.min(parseInt(tag[1]), 4));
+        return `\n${hashes} ${inner().trim()}\n`;
+      }
+      if (tag === 'P' || tag === 'DIV' || tag === 'SECTION' || tag === 'ARTICLE') {
+        const t = inner().trim();
+        return t ? `\n${t}\n` : '';
+      }
+      if (tag === 'BR') return '\n';
+      if (tag === 'LI') return `\n${inner().trim()}\n`;
+      if (tag === 'UL' || tag === 'OL' || tag === 'BLOCKQUOTE') return `\n${inner()}\n`;
+      if (tag === 'TR') return `\n${inner().trim()}\n`;
+      if (tag === 'TD' || tag === 'TH') return `${inner().trim()} `;
+      if (tag === 'B' || tag === 'STRONG') {
+        const t = inner().trim();
+        return t ? `**${t}**` : '';
+      }
+      if (tag === 'A') {
+        let href = node.getAttribute('href') || '';
+        if (href.startsWith('//')) href = 'https:' + href;
+        const label = inner().trim();
+        if (/^https?:\/\//i.test(href) && label && !isGarbledLabel(label)) {
+          // Percent-encode [ ] in URL so markdown link parser isn't confused
+          const safeHref = href.replace(/\[/g, '%5B').replace(/\]/g, '%5D');
+          return `[${label}](${safeHref})`;
+        }
+        return label;
+      }
+      return inner();
+    }
+
+    const md = Array.from(tmp.childNodes).map(nodeToMd).join('');
+    return md.replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  function inlineMarkdownToHtml(text: string): string {
+    let out = '';
+    let i = 0;
+    while (i < text.length) {
+      // Bold **...**
+      if (text[i] === '*' && text[i + 1] === '*') {
+        const end = text.indexOf('**', i + 2);
+        if (end !== -1) {
+          out += `<b>${escHtml(text.slice(i + 2, end))}</b>`;
+          i = end + 2;
+          continue;
+        }
+      }
+      // Markdown link [label](url) — find ]( as a pair, then balance parentheses for URL end
+      if (text[i] === '[') {
+        let cb = -1;
+        for (let j = i + 1; j < text.length - 1; j++) {
+          if (text[j] === ']' && text[j + 1] === '(') { cb = j; break; }
+        }
+        if (cb !== -1) {
+          let depth = 1, cp = -1;
+          for (let j = cb + 2; j < text.length; j++) {
+            if (text[j] === '(') depth++;
+            else if (text[j] === ')') { if (--depth === 0) { cp = j; break; } }
+          }
+          if (cp !== -1) {
+            const label = text.slice(i + 1, cb);
+            const url = text.slice(cb + 2, cp);
+            if (/^https?:\/\//i.test(url)) {
+              const labelHtml = inlineMarkdownToHtml(label).replace(/<br>$/, '') || escHtml(label);
+              out += `<a href="${escAttr(url)}" target="_blank" rel="noopener noreferrer">${labelHtml}</a>`;
+              i = cp + 1;
+              continue;
+            }
+          }
+        }
+      }
+      // Bare URL
+      const urlMatch = text.slice(i).match(/^https?:\/\/\S+/i);
+      if (urlMatch) {
+        const url = urlMatch[0].replace(/[.,;:!?'")>\]]+$/, '');
+        const trail = urlMatch[0].slice(url.length);
+        out += `<a href="${escAttr(url)}" target="_blank" rel="noopener noreferrer">${escHtml(url)}</a>${escHtml(trail)}`;
+        i += urlMatch[0].length;
+        continue;
+      }
+      out += escHtml(text[i]);
+      i++;
+    }
+    return out || '<br>';
+  }
+
+  function parsePasteBlocks(text: string): HTMLElement[] {
+    return text.split(/\r?\n/).map((rawLine) => {
+      const line = rawLine.trimEnd();
+      const hm = line.match(/^(#{1,4})\s+(.+)$/);
+      if (hm) {
+        const level = hm[1].length;
+        const tag = level === 1 ? 'h2' : level === 2 ? 'h3' : level === 3 ? 'h4' : 'h5';
+        const el = document.createElement(tag);
+        el.textContent = hm[2];
+        return el as HTMLElement;
+      }
+      const p = document.createElement('p');
+      p.innerHTML = line.trim() ? inlineMarkdownToHtml(line) : '<br>';
+      return p as HTMLElement;
+    });
+  }
+
   function handlePaste(e: ClipboardEvent) {
     e.preventDefault();
+    const html = e.clipboardData?.getData('text/html') || '';
     const text = e.clipboardData?.getData('text/plain') || '';
-    if (!text) return;
+    if (!html && !text) return;
+
+    const source = html ? htmlToMarkdown(html) : text;
+    if (!source.trim()) return;
+
     const sel = window.getSelection();
     if (!sel?.rangeCount) return;
     const range = sel.getRangeAt(0);
     range.deleteContents();
-    const lines = text.split(/\r?\n/);
-    const frag = document.createDocumentFragment();
-    for (let i = 0; i < lines.length; i++) {
-      if (i > 0) frag.appendChild(document.createElement('br'));
-      frag.appendChild(document.createTextNode(lines[i]));
+
+    const blocks = parsePasteBlocks(source).filter(
+      (b) => b.textContent?.trim() || b.querySelector('a,br')
+    );
+    if (!blocks.length) return;
+
+    // Single <p> block → insert inline at cursor
+    if (blocks.length === 1 && blocks[0].tagName === 'P') {
+      const frag = document.createDocumentFragment();
+      for (const child of Array.from(blocks[0].childNodes)) frag.appendChild(child.cloneNode(true));
+      range.insertNode(frag);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      setTimeout(() => { normalizeBlocks(); emit(); }, 0);
+      return;
     }
-    range.insertNode(frag);
-    range.collapse(false);
-    sel.removeAllRanges();
-    sel.addRange(range);
+
+    // Multiple blocks (or heading) → split current block and insert
+    const currentBlock = getBlock(range.startContainer);
+    if (!currentBlock) {
+      const frag = document.createDocumentFragment();
+      for (const b of blocks) frag.appendChild(b);
+      editorEl?.appendChild(frag);
+      if (blocks.length) setCursorAtEnd(blocks[blocks.length - 1]);
+    } else {
+      // Extract content after cursor from current block
+      const afterRange = document.createRange();
+      afterRange.setStart(range.startContainer, range.startOffset);
+      if (currentBlock.lastChild) afterRange.setEndAfter(currentBlock.lastChild);
+      else afterRange.setEnd(currentBlock, currentBlock.childNodes.length);
+      const afterFrag = afterRange.extractContents();
+
+      // Merge first block's content into current block
+      for (const child of Array.from(blocks[0].childNodes)) {
+        currentBlock.appendChild(child.cloneNode(true));
+      }
+      if (!currentBlock.textContent?.trim()) currentBlock.innerHTML = '<br>';
+
+      // Insert middle blocks
+      let anchor: HTMLElement = currentBlock;
+      for (let i = 1; i < blocks.length - 1; i++) {
+        anchor.after(blocks[i]);
+        anchor = blocks[i];
+      }
+
+      // Build final block: last paste block + after-cursor content
+      const lastPaste = blocks[blocks.length - 1];
+      const finalBlock = document.createElement(lastPaste.tagName.toLowerCase()) as HTMLElement;
+      for (const child of Array.from(lastPaste.childNodes)) {
+        finalBlock.appendChild(child.cloneNode(true));
+      }
+      const cursorMark = document.createTextNode('\u200B');
+      finalBlock.appendChild(cursorMark);
+      finalBlock.appendChild(afterFrag);
+      if (!finalBlock.textContent?.replace(/\u200B/g, '').trim()) finalBlock.innerHTML = '<br>';
+      anchor.after(finalBlock);
+
+      if (finalBlock.innerHTML !== '<br>') {
+        const r = document.createRange();
+        r.setStartAfter(cursorMark);
+        r.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      } else {
+        setCursorAtStart(finalBlock);
+      }
+    }
+
     setTimeout(() => { normalizeBlocks(); emit(); }, 0);
   }
 
@@ -386,7 +636,7 @@
   <div
     bind:this={editorEl}
     contenteditable="true"
-    class="min-h-[120px] focus:outline-none"
+    class="min-h-[120px] focus:outline-none select-text"
     onkeydown={handleKeydown}
     oninput={handleInput}
     onclick={handleEditorClick}

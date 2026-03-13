@@ -82,3 +82,13 @@ class ProjectMember(models.Model):
     class Meta:
         db_table = 'project_members'
         unique_together = ('project', 'user')
+
+
+class ProjectFavorite(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='favorites')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favorite_projects')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'project_favorites'
+        unique_together = ('project', 'user')

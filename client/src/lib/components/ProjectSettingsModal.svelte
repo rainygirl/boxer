@@ -2,6 +2,7 @@
   import { invalidate } from '$app/navigation';
   import { projectsApi } from '$lib/api/projects';
   import type { Project } from '$lib/types';
+  import { t } from '$lib/i18n';
 
   const { project, onClose, onOpenMembers }: { project: Project; onClose: () => void; onOpenMembers: () => void } = $props();
 
@@ -11,10 +12,15 @@
   let nameError = $state('');
   let saving = $state(false);
   let saved = $state(false);
+  let nameInputEl = $state<HTMLInputElement | null>(null);
+
+  $effect(() => {
+    setTimeout(() => nameInputEl?.focus(), 0);
+  });
 
   function validateKey(v: string): string {
-    if (!v) return '키를 입력해주세요';
-    if (!/^[A-Z]{1,5}$/.test(v)) return '영문 대문자만, 최대 5자';
+    if (!v) return $t('project.keyRequired');
+    if (!/^[A-Z]{1,5}$/.test(v)) return $t('project.keyFormat');
     return '';
   }
 
@@ -25,13 +31,13 @@
   }
 
   function onNameInput() {
-    nameError = name.trim() ? '' : '프로젝트명을 입력해주세요';
+    nameError = name.trim() ? '' : $t('project.nameRequired');
     saved = false;
   }
 
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
-    nameError = name.trim() ? '' : '프로젝트명을 입력해주세요';
+    nameError = name.trim() ? '' : $t('project.nameRequired');
     keyError = validateKey(key);
     if (nameError || keyError) return;
 
@@ -45,8 +51,7 @@
       saved = true;
       setTimeout(onClose, 600);
     } catch (err: any) {
-      const detail = err?.response?.data?.detail ?? '저장에 실패했습니다';
-      // key-related errors go to keyError, others to nameError
+      const detail = err?.response?.data?.detail ?? $t('project.saveFailed');
       if (typeof detail === 'string' && detail.toLowerCase().includes('key')) {
         keyError = detail;
       } else {
@@ -61,11 +66,11 @@
 <svelte:window onkeydown={(e) => e.key === 'Escape' && onClose()} />
 
 <div class="fixed inset-0 z-50 flex items-center justify-center">
-  <div class="absolute inset-0 bg-black/30" onclick={onClose}></div>
+  <div class="absolute inset-0 bg-black/60" onclick={onClose}></div>
   <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm mx-4">
     <form onsubmit={handleSubmit}>
       <div class="flex items-center justify-between px-6 pt-5 pb-0">
-        <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">프로젝트 설정</h2>
+        <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">{$t('project.settingsTitle')}</h2>
         <button type="button" onclick={onClose} class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">✕</button>
       </div>
       <div class="p-6 space-y-4">
@@ -73,14 +78,14 @@
         <!-- 프로젝트명 -->
         <div>
           <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-            프로젝트명
+            {$t('project.nameLabel')}
           </label>
           <input
-            autofocus
+            bind:this={nameInputEl}
             type="text"
             bind:value={name}
             oninput={onNameInput}
-            placeholder="프로젝트 이름"
+            placeholder={$t('project.namePlaceholder')}
             class="w-full text-sm px-3 py-2 border rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
                    placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500
                    {nameError ? 'border-red-400' : 'border-slate-200 dark:border-slate-600'}"
@@ -93,7 +98,7 @@
         <!-- 프로젝트 키 -->
         <div>
           <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-            프로젝트 키 <span class="font-normal text-slate-400">(태스크 번호 접두사)</span>
+            {$t('project.keyLabel')} <span class="font-normal text-slate-400">{$t('project.keyHint')}</span>
           </label>
           <div class="flex items-center gap-3">
             <input
@@ -101,7 +106,7 @@
               bind:value={key}
               oninput={onKeyInput}
               maxlength="5"
-              placeholder="예: PROJ"
+              placeholder={$t('project.keyPlaceholder')}
               class="w-28 text-sm px-3 py-2 border rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
                      placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono uppercase tracking-widest
                      {keyError ? 'border-red-400' : 'border-slate-200 dark:border-slate-600'}"
@@ -119,7 +124,7 @@
           type="button"
           onclick={() => { onClose(); onOpenMembers(); }}
           class="text-[12px] text-slate-400 dark:text-slate-500 hover:text-brand-500 dark:hover:text-brand-400 underline underline-offset-2 transition-colors"
-        >멤버 관리</button>
+        >{$t('project.manageMembers')}</button>
         <div class="flex items-center gap-2">
         <button
           type="submit"
@@ -129,7 +134,7 @@
                    ? 'bg-green-500 text-white'
                    : 'bg-brand-500 hover:bg-brand-600 text-white disabled:opacity-50'}"
         >
-          {saved ? '저장됨 ✓' : saving ? '저장 중…' : '저장'}
+          {saved ? $t('common.saved') : saving ? $t('common.saving') : $t('common.save')}
         </button>
         </div>
       </div>

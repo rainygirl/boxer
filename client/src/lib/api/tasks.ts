@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { Task, TaskStatus, TaskPriority, TaskAttachment } from '$lib/types';
+import type { Task, TaskStatus, TaskPriority, TaskAttachment, TaskActivity, TaskDependencies, SubTask } from '$lib/types';
 
 export interface TaskCreate {
   title: string;
@@ -7,6 +7,7 @@ export interface TaskCreate {
   status?: TaskStatus;
   priority?: TaskPriority;
   assignee_id?: number | null;
+  due_date?: string | null;
 }
 
 export interface TaskUpdate {
@@ -15,6 +16,18 @@ export interface TaskUpdate {
   status?: TaskStatus;
   priority?: TaskPriority;
   assignee_id?: number | null;
+  due_date?: string | null;
+}
+
+export interface SubTaskCreate {
+  title: string;
+  assignee_id?: number | null;
+}
+
+export interface SubTaskUpdate {
+  title?: string;
+  assignee_id?: number | null;
+  is_done?: boolean;
 }
 
 export const tasksApi = {
@@ -40,4 +53,22 @@ export const tasksApi = {
   },
   deleteAttachment: (taskId: string, attachmentId: string) =>
     api.delete(`/tasks/${taskId}/attachments/${attachmentId}`),
+  listActivities: (taskId: string) =>
+    api.get<TaskActivity[]>(`/tasks/${taskId}/activities`).then((r) => r.data),
+
+  listDependencies: (taskId: string) =>
+    api.get<TaskDependencies>(`/tasks/${taskId}/dependencies`).then((r) => r.data),
+  addDependency: (taskId: string, blockingTaskId: string) =>
+    api.post<TaskDependencies>(`/tasks/${taskId}/dependencies`, { blocking_task_id: blockingTaskId }).then((r) => r.data),
+  removeDependency: (taskId: string, blockingTaskId: string) =>
+    api.delete(`/tasks/${taskId}/dependencies/${blockingTaskId}`),
+
+  listSubtasks: (taskId: string) =>
+    api.get<SubTask[]>(`/tasks/${taskId}/subtasks`).then((r) => r.data),
+  createSubtask: (taskId: string, data: SubTaskCreate) =>
+    api.post<SubTask>(`/tasks/${taskId}/subtasks`, data).then((r) => r.data),
+  updateSubtask: (taskId: string, subtaskId: string, data: SubTaskUpdate) =>
+    api.patch<SubTask>(`/tasks/${taskId}/subtasks/${subtaskId}`, data).then((r) => r.data),
+  deleteSubtask: (taskId: string, subtaskId: string) =>
+    api.delete(`/tasks/${taskId}/subtasks/${subtaskId}`),
 };

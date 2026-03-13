@@ -9,15 +9,14 @@
   import MembersModal from './MembersModal.svelte';
   import ProjectSettingsModal from './ProjectSettingsModal.svelte';
   import { t } from '$lib/i18n';
+  import { sidebarOpen } from '$lib/stores/sidebar';
 
-  const { projectId, onTaskCreated }: { projectId: string; onTaskCreated: () => void } = $props();
+  const { projectId, onTaskCreated, section = 'issues' }: { projectId: string; onTaskCreated: () => void; section?: 'issues' | 'reports' } = $props();
 
   let showCreate = $state(false);
   let showMembers = $state(false);
   let showSettings = $state(false);
   let showColorPicker = $state(false);
-  let members = $state<ProjectMember[]>([]);
-
   const COLORS = ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f97316','#eab308','#22c55e','#14b8a6','#3b82f6','#64748b'];
 
   const project = $derived(
@@ -29,17 +28,12 @@
   );
 
   const MAX_AVATARS = 4;
+  const members = $derived<ProjectMember[]>(project?.members ?? []);
   const visible = $derived(members.slice(0, MAX_AVATARS));
   const overflow = $derived(Math.max(0, members.length - MAX_AVATARS));
 
-  $effect(() => {
-    if (projectId) {
-      projectsApi.listMembers(projectId).then((m) => (members = m));
-    }
-  });
-
-  function onMembersClose() {
-    projectsApi.listMembers(projectId).then((m) => (members = m));
+  async function onMembersClose() {
+    await invalidate('app:projects');
     showMembers = false;
   }
 
@@ -53,9 +47,18 @@
 
 <svelte:window onclick={() => { showColorPicker = false; }} />
 
-<header class="flex items-center justify-between px-6 py-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0">
-  <!-- Left: color · name · members · settings -->
+<header class="flex items-center justify-between px-3 md:px-6 py-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0">
+  <!-- Left: hamburger(mobile) · color · name · members · settings -->
   <div class="flex items-center gap-2">
+    <!-- Hamburger (mobile only) -->
+    <button
+      class="md:hidden p-1.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+      onclick={() => sidebarOpen.update((v) => !v)}
+    >
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
     {#if project}
       <!-- Color dot (owner only: clickable) -->
       <div class="relative">
@@ -134,6 +137,7 @@
 
   <!-- Right: view toggle · create task -->
   <div class="flex items-center gap-2">
+    {#if section === 'issues'}
     <!-- View toggle -->
     <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
       <button
@@ -148,7 +152,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
         </svg>
-        {$t('view.board')}
+        <span class="hidden sm:inline">{$t('view.board')}</span>
       </button>
       <button
         onclick={() => viewMode.set('table')}
@@ -162,7 +166,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
         </svg>
-        {$t('view.table')}
+        <span class="hidden sm:inline">{$t('view.table')}</span>
       </button>
     </div>
 
@@ -172,8 +176,9 @@
       class="flex items-center gap-1.5 px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium rounded-lg transition-colors"
     >
       <span class="text-base leading-none">+</span>
-      {$t('task.add')}
+      <span class="hidden sm:inline">{$t('task.add')}</span>
     </button>
+    {/if}
   </div>
 </header>
 

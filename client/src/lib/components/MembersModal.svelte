@@ -75,7 +75,7 @@
 <svelte:window onkeydown={(e) => e.key === 'Escape' && onClose()} />
 
 <div class="fixed inset-0 z-50 flex items-center justify-center">
-  <div class="absolute inset-0 bg-black/30" onclick={onClose}></div>
+  <div class="absolute inset-0 bg-black/60" onclick={onClose}></div>
   <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
     <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
       <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">{$t('member.manage')}</h2>

@@ -16,7 +16,7 @@
 
   function validateKey(v: string) {
     if (!v) return '';
-    if (!/^[A-Za-z]{1,20}$/.test(v)) return '알파벳(A-Z)만, 최대 20자';
+    if (!/^[A-Za-z]{1,20}$/.test(v)) return $t('project.keyValidation');
     return '';
   }
 
@@ -44,7 +44,7 @@
 <svelte:window onkeydown={(e) => e.key === 'Escape' && onClose()} />
 
 <div class="fixed inset-0 z-50 flex items-center justify-center">
-  <div class="absolute inset-0 bg-black/30" onclick={onClose}></div>
+  <div class="absolute inset-0 bg-black/60" onclick={onClose}></div>
   <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
     <form onsubmit={handleSubmit}>
       <div class="flex items-center justify-between px-6 pt-5 pb-0">
@@ -85,7 +85,7 @@
           <!-- Project Key -->
           <div>
             <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-              프로젝트 키 <span class="font-normal text-slate-400">(선택 · 미입력 시 자동 생성)</span>
+              {$t('project.keyLabel')} <span class="font-normal text-slate-400">{$t('project.keyOptionalHint')}</span>
             </label>
             <div class="flex items-center gap-2">
               <input
@@ -93,7 +93,7 @@
                 bind:value={key}
                 oninput={() => { key = key.toUpperCase(); keyError = validateKey(key); }}
                 maxlength="20"
-                placeholder="예: PROJ"
+                placeholder={$t('project.keyPlaceholder')}
                 class="w-32 text-sm px-3 py-2 border rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono uppercase
                   {keyError ? 'border-red-400' : 'border-slate-200 dark:border-slate-600'}"
               />
@@ -102,7 +102,7 @@
               {:else if key}
                 <span class="text-xs text-slate-400 font-mono">{key.toUpperCase()}-1, {key.toUpperCase()}-2, …</span>
               {:else}
-                <span class="text-xs text-slate-400">자동: AA-1, AA-2, …</span>
+                <span class="text-xs text-slate-400">{$t('project.keyAutoPreview')}</span>
               {/if}
             </div>
           </div>

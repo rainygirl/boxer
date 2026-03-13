@@ -6,7 +6,8 @@ from ninja.errors import HttpError
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
-from .models import Project, ProjectMember
+from django.db.models import Exists, OuterRef
+from .models import Project, ProjectMember, ProjectFavorite
 from .schemas import ProjectCreate, ProjectUpdate, ProjectColumnsUpdate, ProjectOut, ProjectMemberOut, MemberInvite, MemberRoleUpdate
 
 _KEY_RE = re.compile(r'^[A-Z]{1,5}$')
@@ -36,9 +37,20 @@ def _get_project_for_user(pk: UUID, user) -> Project:
     )
 
 
+def _annotate_favorites(qs, user):
+    fav_sub = ProjectFavorite.objects.filter(project=OuterRef('pk'), user=user)
+    return qs.annotate(is_favorite=Exists(fav_sub))
+
+
 @router.get('', response=List[ProjectOut], summary='내 프로젝트 목록')
 def list_projects(request: HttpRequest):
-    return Project.objects.filter(members=request.auth).select_related('owner')
+    qs = (
+        Project.objects
+        .filter(members=request.auth)
+        .select_related('owner')
+        .prefetch_related('memberships__user')
+    )
+    return _annotate_favorites(qs, request.auth)
 
 
 @router.post('', response=ProjectOut, summary='프로젝트 생성')
@@ -79,6 +91,16 @@ def update_project_columns(request: HttpRequest, project_id: UUID, payload: Proj
     project.disabled_statuses = [s for s in payload.disabled_statuses if s in valid_statuses]
     project.save(update_fields=['disabled_statuses'])
     return Project.objects.select_related('owner').get(pk=project.pk)
+
+
+@router.post('/{project_id}/favorite', summary='즐겨찾기 토글')
+def toggle_favorite(request: HttpRequest, project_id: UUID):
+    _get_project_for_user(project_id, request.auth)
+    fav, created = ProjectFavorite.objects.get_or_create(project_id=project_id, user=request.auth)
+    if not created:
+        fav.delete()
+        return {'favorited': False}
+    return {'favorited': True}
 
 
 @router.delete('/{project_id}', summary='프로젝트 삭제')

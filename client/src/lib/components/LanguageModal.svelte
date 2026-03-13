@@ -19,7 +19,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
   role="dialog"
-  class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
   onclick={handleBackdrop}
   onkeydown={(e) => { if (e.key === 'Escape') onClose(); }}
 >

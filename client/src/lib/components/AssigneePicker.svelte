@@ -1,10 +1,9 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { projectsApi } from '$lib/api/projects';
   import { matchKorean } from '$lib/utils/hangul';
   import type { User, ProjectMember } from '$lib/types';
   import { t } from '$lib/i18n';
-  import { registerPopup } from '$lib/stores/popup';
+  import { registerPopup, closeActivePopup } from '$lib/stores/popup';
   import { onMount } from 'svelte';
 
   const {
@@ -18,19 +17,16 @@
   } = $props();
 
   const projectId = $derived(($page.params as any).projectId as string);
+  const members = $derived<ProjectMember[]>(
+    (($page.data as any)?.projects ?? []).find((p: any) => p.id === projectId)?.members ?? []
+  );
 
-  let members = $state<ProjectMember[]>([]);
   let query = $state('');
   let open = $state(false);
   let activeIdx = $state(-1);
   let inputEl = $state<HTMLInputElement | null>(null);
   let listEl = $state<HTMLUListElement | null>(null);
-
-  $effect(() => {
-    if (projectId) {
-      projectsApi.listMembers(projectId).then((m) => (members = m));
-    }
-  });
+  let blurTimer: ReturnType<typeof setTimeout> | null = null;
 
   const filtered = $derived(
     query.trim()
@@ -51,6 +47,11 @@
   }
 
   function openDropdown() {
+    if (blurTimer) { clearTimeout(blurTimer); blurTimer = null; }
+    if (open) {
+      closeActivePopup();
+      return;
+    }
     open = true;
     activeIdx = -1;
     registerPopup(() => { open = false; activeIdx = -1; });
@@ -60,7 +61,7 @@
   onMount(() => { if (initiallyOpen) openDropdown(); });
 
   function handleBlur() {
-    setTimeout(() => { open = false; activeIdx = -1; }, 150);
+    blurTimer = setTimeout(() => { open = false; activeIdx = -1; }, 150);
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -101,7 +102,7 @@
 <div class="relative">
   <div
     class="flex items-center gap-2 px-2.5 py-1.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 cursor-pointer"
-    onclick={openDropdown}
+    onclick={(e) => { e.stopPropagation(); openDropdown(); }}
   >
     {#if value}
       {#if value.avatar_url}

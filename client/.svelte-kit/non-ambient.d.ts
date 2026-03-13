@@ -27,21 +27,25 @@ export {};
 
 declare module "$app/types" {
 	export interface AppTypes {
-		RouteId(): "/" | "/app" | "/app/my-issues" | "/app/project" | "/app/project/[projectId]" | "/auth" | "/auth/callback" | "/login";
+		RouteId(): "/" | "/app" | "/app/my-issues" | "/app/project" | "/app/project/[projectId]" | "/app/project/[projectId]/issue" | "/app/project/[projectId]/issue/[taskId]" | "/auth" | "/auth/callback" | "/login";
 		RouteParams(): {
-			"/app/project/[projectId]": { projectId: string }
+			"/app/project/[projectId]": { projectId: string };
+			"/app/project/[projectId]/issue": { projectId: string };
+			"/app/project/[projectId]/issue/[taskId]": { projectId: string; taskId: string }
 		};
 		LayoutParams(): {
-			"/": { projectId?: string };
-			"/app": { projectId?: string };
+			"/": { projectId?: string; taskId?: string };
+			"/app": { projectId?: string; taskId?: string };
 			"/app/my-issues": Record<string, never>;
-			"/app/project": { projectId?: string };
-			"/app/project/[projectId]": { projectId: string };
+			"/app/project": { projectId?: string; taskId?: string };
+			"/app/project/[projectId]": { projectId: string; taskId?: string };
+			"/app/project/[projectId]/issue": { projectId: string; taskId?: string };
+			"/app/project/[projectId]/issue/[taskId]": { projectId: string; taskId: string };
 			"/auth": Record<string, never>;
 			"/auth/callback": Record<string, never>;
 			"/login": Record<string, never>
 		};
-		Pathname(): "/" | "/app" | "/app/my-issues" | `/app/project/${string}` & {} | "/auth/callback" | "/login";
+		Pathname(): "/" | "/app" | "/app/my-issues" | `/app/project/${string}` & {} | `/app/project/${string}/issue/${string}` & {} | "/auth/callback" | "/login";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
 		Asset(): string & {};
 	}

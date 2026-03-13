@@ -31,8 +31,18 @@ class ProjectOut(Schema):
     key: str
     disabled_statuses: list[str]
     owner: UserOut
+    is_favorite: bool = False
+    members: list['ProjectMemberOut'] = []
     created_at: datetime
     updated_at: datetime
+
+    @staticmethod
+    def resolve_is_favorite(obj) -> bool:
+        return bool(getattr(obj, 'is_favorite', False))
+
+    @staticmethod
+    def resolve_members(obj) -> list:
+        return list(obj.memberships.all())
 
 
 class ProjectMemberOut(Schema):

@@ -23,6 +23,8 @@ export interface Project {
   key: string;
   disabled_statuses: TaskStatus[];
   owner: User;
+  is_favorite: boolean;
+  members: ProjectMember[];
   created_at: string;
   updated_at: string;
 }
@@ -51,6 +53,40 @@ export interface Task {
   created_by: User;
   created_at: string;
   updated_at: string;
+  due_date: string | null;
+  subtasks: SubTask[];
+}
+
+export interface SubTask {
+  id: string;
+  parent_task_id: string;
+  title: string;
+  status: TaskStatus;
+  assignee: User | null;
+  sub_number: number;
+  ref: string;
+}
+
+export interface DependencyTask {
+  id: string;
+  ref: string;
+  title: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  project_id: string;
+}
+
+export interface TaskDependencies {
+  blocking: DependencyTask[];  // 이 이슈가 기다리는 이슈들
+  blocked: DependencyTask[];   // 이 이슈를 기다리는 이슈들
+}
+
+export interface TaskActivity {
+  id: string;
+  activity_type: 'created' | 'status_changed' | 'priority_changed' | 'assignee_changed' | 'content_edited' | 'due_date_changed' | 'project_moved';
+  data: Record<string, any>;
+  user: User | null;
+  created_at: string;
 }
 
 export const TASK_STATUSES: { value: TaskStatus; label: string; color: string; bg: string }[] = [

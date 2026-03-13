@@ -27,4 +27,7 @@ export const projectsApi = {
 
   updateColumns: (id: string, disabledStatuses: string[]) =>
     api.patch<Project>(`/projects/${id}/columns`, { disabled_statuses: disabledStatuses }).then((r) => r.data),
+
+  toggleFavorite: (id: string) =>
+    api.post<{ favorited: boolean }>(`/projects/${id}/favorite`).then((r) => r.data),
 };

@@ -1,24 +1,23 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import type { Task, TaskPriority, User, ProjectMember } from '$lib/types';
   import { PRIORITY_CONFIG } from '$lib/types';
   import { tasksApi } from '$lib/api/tasks';
-  import { projectsApi } from '$lib/api/projects';
   import { matchKorean } from '$lib/utils/hangul';
   import { t, dateLocale } from '$lib/i18n';
-  import TaskDetailPanel from './TaskDetailPanel.svelte';
+  import DatePicker from './DatePicker.svelte';
 
   const { task, onUpdate }: { task: Task; onUpdate: () => void } = $props();
 
   const projectId = $derived(($page.params as any).projectId as string);
-
-  let showDetail = $state(false);
   let showPriorityMenu = $state(false);
   let showAssigneeMenu = $state(false);
   let assigneeQuery = $state('');
   let assigneeInputEl = $state<HTMLInputElement | null>(null);
-  let members = $state<ProjectMember[]>([]);
-  let membersLoaded = $state(false);
+  const members = $derived<ProjectMember[]>(
+    (($page.data as any)?.projects ?? []).find((p: any) => p.id === projectId)?.members ?? []
+  );
 
   // fixed 위치 계산용
   let priorityRect = $state<{ top: number; bottom: number; left: number } | null>(null);
@@ -54,12 +53,6 @@
       : members
   );
 
-  async function loadMembers() {
-    if (membersLoaded) return;
-    members = await projectsApi.listMembers(projectId);
-    membersLoaded = true;
-  }
-
   async function setPriority(p: TaskPriority, e: MouseEvent) {
     e.stopPropagation();
     showPriorityMenu = false;
@@ -87,7 +80,6 @@
     showPriorityMenu = false;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     assigneeRect = { top: rect.top, bottom: rect.bottom, right: window.innerWidth - rect.right };
-    loadMembers();
     showAssigneeMenu = !showAssigneeMenu;
     if (showAssigneeMenu) setTimeout(() => assigneeInputEl?.focus(), 0);
   }
@@ -106,50 +98,62 @@
 <div
   role="button"
   tabindex="0"
-  onclick={() => (showDetail = true)}
-  onkeydown={(e) => e.key === 'Enter' && (showDetail = true)}
+  onclick={() => goto(`/app/project/${task.project_id}/issue/${task.id}`)}
+  onkeydown={(e) => e.key === 'Enter' && goto(`/app/project/${task.project_id}/issue/${task.id}`)}
   class="relative bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 cursor-pointer select-none hover:shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-all"
 >
   <div class="flex items-center gap-1.5 mb-1">
     <span class="text-[11px] font-mono font-medium text-slate-400 dark:text-slate-500">{task.ref}</span>
   </div>
   <p class="text-sm text-slate-700 dark:text-slate-200 font-medium leading-snug line-clamp-2 mb-2">
-    {task.title}
+    {task.title}{#if task.subtasks?.length > 0}{@const done = task.subtasks.filter((s) => s.status === 'done').length}<span class="ml-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full align-middle
+      {done === task.subtasks.length
+        ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+        : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}"
+    >{Math.round(done / task.subtasks.length * 100)}%</span>{/if}
   </p>
 
   <div class="flex items-center justify-between">
-    <!-- Priority + date -->
-    <div class="flex flex-col gap-0.5">
-      <button
-        onclick={openPriorityMenu}
-        class="flex items-center gap-1 rounded px-0.5 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-      >
-        <span class="text-base leading-none">{priority?.icon}</span>
-        <span class="text-[12px] text-slate-500 dark:text-slate-400 leading-none">{priority ? $t(`priority.${priority.value}` as any) : ''}</span>
-      </button>
-      <span class="text-[11px] text-slate-300 dark:text-slate-600 px-0.5 select-none">
-        {formatCreatedAt(task.created_at, $dateLocale)}
-      </span>
-    </div>
-
-    <!-- Assignee -->
+    <!-- Priority -->
     <button
-      onclick={openAssigneeMenu}
-      class="rounded-full hover:ring-2 hover:ring-brand-400 hover:ring-offset-1 transition-all"
-      title={task.assignee ? (task.assignee.name || task.assignee.email) : $t('assignee.assign')}
+      onclick={openPriorityMenu}
+      class="flex items-center gap-1 rounded px-0.5 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
     >
-      {#if task.assignee}
-        {#if task.assignee.avatar_url}
-          <img src={task.assignee.avatar_url} class="w-5 h-5 rounded-full" alt={task.assignee.name} />
-        {:else}
-          <div class="w-5 h-5 rounded-full bg-brand-400 text-white text-[10px] flex items-center justify-center font-medium">
-            {task.assignee.name[0]}
-          </div>
-        {/if}
-      {:else}
-        <div class="w-5 h-5 rounded-full border border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-300 dark:text-slate-600 text-[10px]">+</div>
-      {/if}
+      <span class="text-base leading-none">{priority?.icon}</span>
+      <span class="text-[12px] text-slate-500 dark:text-slate-400 leading-none">{priority ? $t(`priority.${priority.value}` as any) : ''}</span>
     </button>
+
+    <!-- Due date + Assignee -->
+    <div class="flex items-center gap-1.5">
+      <span onclick={(e) => e.stopPropagation()}>
+        <DatePicker
+          plain
+          monthFormat="long"
+          value={task.due_date ?? ''}
+          placeholder={formatCreatedAt(task.created_at, $dateLocale)}
+          onChange={async (v) => { await tasksApi.update(task.id, { due_date: v || null }); onUpdate(); }}
+        />
+      </span>
+
+      <!-- Assignee -->
+      <button
+        onclick={openAssigneeMenu}
+        class="rounded-full hover:ring-2 hover:ring-brand-400 hover:ring-offset-1 transition-all"
+        title={task.assignee ? (task.assignee.name || task.assignee.email) : $t('assignee.assign')}
+      >
+        {#if task.assignee}
+          {#if task.assignee.avatar_url}
+            <img src={task.assignee.avatar_url} class="w-5 h-5 rounded-full" alt={task.assignee.name} />
+          {:else}
+            <div class="w-5 h-5 rounded-full bg-brand-400 text-white text-[10px] flex items-center justify-center font-medium">
+              {task.assignee.name[0]}
+            </div>
+          {/if}
+        {:else}
+          <div class="w-5 h-5 rounded-full border border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-300 dark:text-slate-600 text-[10px]">+</div>
+        {/if}
+      </button>
+    </div>
   </div>
 </div>
 
@@ -223,6 +227,3 @@
   </div>
 {/if}
 
-{#if showDetail}
-  <TaskDetailPanel {task} onClose={() => (showDetail = false)} {onUpdate} />
-{/if}

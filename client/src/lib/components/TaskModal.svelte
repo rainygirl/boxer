@@ -82,7 +82,7 @@
 />
 
 <div class="fixed inset-0 z-50 flex items-center justify-center">
-  <div class="absolute inset-0 bg-black/30" onclick={onClose}></div>
+  <div class="absolute inset-0 bg-black/60" onclick={onClose}></div>
   <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
     <form onsubmit={handleSubmit}>
       <div class="flex items-center justify-between px-6 pt-5 pb-0">

@@ -1,13 +1,13 @@
 <script lang="ts">
   import { dndzone, TRIGGERS } from 'svelte-dnd-action';
   import { flip } from 'svelte/animate';
-  import type { Task, TaskStatus, TaskPriority, Project } from '$lib/types';
+  import type { Task, TaskStatus, TaskPriority, Project, SubTask } from '$lib/types';
   import { TASK_STATUSES, PRIORITY_CONFIG } from '$lib/types';
   import { tasksApi } from '$lib/api/tasks';
   import { t, dateLocale } from '$lib/i18n';
+  import { goto } from '$app/navigation';
   import { registerPopup, closeActivePopup, popupLeft } from '$lib/stores/popup';
-  import TaskDetailPanel from '$lib/components/TaskDetailPanel.svelte';
-  import { projectsApi } from '$lib/api/projects';
+  import { sidebarOpen } from '$lib/stores/sidebar';
   import { matchKorean } from '$lib/utils/hangul';
   import type { User, ProjectMember } from '$lib/types';
 
@@ -33,7 +33,6 @@
   }
 
   // ── Selected task (detail panel) ──────────────────────────────────────────
-  let selectedTask = $state<Task | null>(null);
 
   // ── Board ─────────────────────────────────────────────────────────────────
   type GroupMap = Record<string, (Task & { id: string })[]>;
@@ -147,8 +146,13 @@
   let statusPopup = $state<{ taskId: string; top: number; left: number } | null>(null);
   let priorityPopup = $state<{ taskId: string; top: number; left: number } | null>(null);
   let assigneePopup = $state<{ taskId: string; projectId: string; top: number; left: number } | null>(null);
-  let assigneeMembers = $state<ProjectMember[]>([]);
   let assigneeQuery = $state('');
+
+  const assigneeMembers = $derived<ProjectMember[]>(
+    assigneePopup
+      ? (projects.find((p) => p.id === assigneePopup!.projectId)?.members ?? [])
+      : []
+  );
 
   const filteredAssigneeMembers = $derived(
     assigneeQuery.trim()
@@ -171,7 +175,6 @@
     statusPopup = null;
     priorityPopup = null;
     registerPopup(() => { assigneePopup = null; });
-    projectsApi.listMembers(task.project_id).then((m) => (assigneeMembers = m));
   }
 
   async function changeAssignee(taskId: string, user: User | null) {
@@ -220,6 +223,11 @@
     await reload();
   }
 
+  async function toggleSubtask(taskId: string, sub: SubTask) {
+    await tasksApi.updateSubtask(taskId, sub.id, { is_done: sub.status !== 'done' });
+    await reload();
+  }
+
   // Table header drag-drop (pointer-based)
   $effect(() => {
     function onMove(e: PointerEvent) {
@@ -247,6 +255,46 @@
 
   const FLIP_MS = 150;
 
+  // ── Narrow viewport (≤540px) ─────────────────────────────────────────────
+  let narrow = $state(false);
+  $effect(() => {
+    const mq = window.matchMedia('(max-width: 540px)');
+    narrow = mq.matches;
+    const handler = (e: MediaQueryListEvent) => { narrow = e.matches; };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  });
+
+  // CJK 문자(한국어·일본어·중국어)는 2유닛, 나머지는 1유닛으로 계산해 컬럼 최소 너비 반환
+  function headerColW(label: string): number {
+    let units = 0;
+    for (const ch of label) {
+      const cp = ch.codePointAt(0) ?? 0;
+      if (
+        (cp >= 0x1100 && cp <= 0x11FF) ||
+        (cp >= 0x3040 && cp <= 0x30FF) ||
+        (cp >= 0x3130 && cp <= 0x318F) ||
+        (cp >= 0x3400 && cp <= 0x4DBF) ||
+        (cp >= 0x4E00 && cp <= 0x9FFF) ||
+        (cp >= 0xAC00 && cp <= 0xD7AF)
+      ) {
+        units += 2;
+      } else if (cp > 32) {
+        units += 1;
+      }
+    }
+    return units * 7 + 24;
+  }
+
+  const tableGridCols = $derived.by(() => {
+    const priW = headerColW($t('table.priority'));
+    const asgW = headerColW($t('table.assignee'));
+    const dateW = headerColW($t('table.createdAt'));
+    return narrow
+      ? `72px 1fr 120px ${priW}px ${asgW}px`
+      : `72px 1fr 120px ${priW}px ${asgW}px ${dateW}px`;
+  });
+
   function formatDate(isoStr: string): string {
     const d = new Date(isoStr);
     const now = new Date();
@@ -260,10 +308,21 @@
 
 <div class="flex flex-col h-full overflow-hidden bg-white dark:bg-slate-900">
   <!-- Header -->
-  <div class="flex items-center justify-between px-6 py-3 border-b border-slate-200 dark:border-slate-700 shrink-0">
-    <h1 class="text-base font-semibold text-slate-800 dark:text-slate-100">
-      {$t('myIssues.title')}
-    </h1>
+  <div class="flex items-center justify-between px-3 md:px-6 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+    <div class="flex items-center gap-2">
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="md:hidden p-1.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+        onclick={() => sidebarOpen.update((v) => !v)}
+      >
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <h1 class="text-base font-semibold text-slate-800 dark:text-slate-100">
+        {$t('myIssues.title')}
+      </h1>
+    </div>
     <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
       <button
         onclick={() => (viewMode = 'board')}
@@ -310,7 +369,7 @@
                   {@const proj = getProject(task.project_id)}
                   {@const pCfg = PRIORITY_CONFIG.find((p) => p.value === task.priority)!}
                   <button
-                    onclick={() => (selectedTask = task)}
+                    onclick={() => goto(`/app/project/${task.project_id}/issue/${task.id}`)}
                     class="w-full text-left bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 hover:border-brand-300 dark:hover:border-brand-600 hover:shadow-sm transition-all cursor-pointer"
                   >
                     <!-- Project badge -->
@@ -321,7 +380,13 @@
                         <span class="text-[10px] text-slate-400 dark:text-slate-500 truncate">{proj.name}</span>
                       </div>
                     {/if}
-                    <p class="text-sm font-medium text-slate-700 dark:text-slate-200 leading-snug mb-2">{task.title}</p>
+                    <p class="text-sm font-medium text-slate-700 dark:text-slate-200 leading-snug mb-2">
+                      {task.title}{#if task.subtasks?.length > 0}{@const done = task.subtasks.filter((s) => s.status === 'done').length}<span class="ml-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full align-middle
+                        {done === task.subtasks.length
+                          ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}"
+                      >{Math.round(done / task.subtasks.length * 100)}%</span>{/if}
+                    </p>
                     <div class="flex items-center gap-2 text-xs text-slate-400">
                       <span>{pCfg.icon}</span>
                       <span>{formatDate(task.created_at)}</span>
@@ -338,25 +403,28 @@
   <!-- ── TABLE VIEW ──────────────────────────────────────────────────────── -->
   {:else}
     <div class="flex-1 overflow-auto scrollbar-thin">
+    <div class="flex flex-col {narrow ? '' : 'min-w-[580px]'}">
       <!-- Column header -->
       <div class="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700
                   grid items-center px-2 text-xs font-semibold text-slate-500 dark:text-slate-400 select-none"
-        style="grid-template-columns: 72px 1fr 120px 100px 44px 90px"
+        style="grid-template-columns: {tableGridCols}"
       >
-        <div class="py-3 px-2">REF</div>
-        <button class="py-3 px-2 text-left hover:text-slate-700 dark:hover:text-slate-200 transition-colors" onclick={() => toggleSort('title')}>
+        <div class="py-3 px-2 whitespace-nowrap">REF</div>
+        <button class="py-3 px-2 text-left hover:text-slate-700 dark:hover:text-slate-200 transition-colors whitespace-nowrap" onclick={() => toggleSort('title')}>
           {$t('table.task')}{sortIcon('title')}
         </button>
-        <button class="py-3 px-2 text-left hover:text-slate-700 dark:hover:text-slate-200 transition-colors" onclick={() => toggleSort('project')}>
+        <button class="py-3 px-2 text-left hover:text-slate-700 dark:hover:text-slate-200 transition-colors whitespace-nowrap" onclick={() => toggleSort('project')}>
           프로젝트{sortIcon('project')}
         </button>
-        <button class="py-3 px-2 text-left hover:text-slate-700 dark:hover:text-slate-200 transition-colors" onclick={() => toggleSort('priority')}>
+        <button class="py-3 px-2 text-left hover:text-slate-700 dark:hover:text-slate-200 transition-colors whitespace-nowrap" onclick={() => toggleSort('priority')}>
           {$t('table.priority')}{sortIcon('priority')}
         </button>
         <div class="py-3 px-2 text-center whitespace-nowrap">{$t('table.assignee')}</div>
-        <button class="py-3 px-2 text-left hover:text-slate-700 dark:hover:text-slate-200 transition-colors" onclick={() => toggleSort('created_at')}>
-          {$t('table.createdAt')}{sortIcon('created_at')}
-        </button>
+        {#if !narrow}
+          <button class="py-3 px-2 text-left hover:text-slate-700 dark:hover:text-slate-200 transition-colors whitespace-nowrap" onclick={() => toggleSort('created_at')}>
+            {$t('table.createdAt')}{sortIcon('created_at')}
+          </button>
+        {/if}
       </div>
 
       {#each TASK_STATUSES as statusCfg}
@@ -412,7 +480,7 @@
                 {@const pCfg = PRIORITY_CONFIG.find((p) => p.value === task.priority)!}
                 <div
                   class="grid items-center px-2 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 group transition-colors"
-                  style="grid-template-columns: 72px 1fr 120px 100px 44px 90px"
+                  style="grid-template-columns: {tableGridCols}"
                 >
                   <!-- Ref -->
                   <div class="py-2.5 px-2">
@@ -422,9 +490,13 @@
                   <!-- Title -->
                   <div class="py-2.5 px-2 min-w-0">
                     <button
-                      onclick={() => (selectedTask = task)}
+                      onclick={() => goto(`/app/project/${task.project_id}/issue/${task.id}`)}
                       class="text-left text-sm font-medium text-slate-700 dark:text-slate-200 hover:text-brand-600 dark:hover:text-brand-400 transition-colors truncate w-full block"
-                    >{task.title}</button>
+                    >{task.title}{#if task.subtasks?.length > 0}{@const done = task.subtasks.filter((s) => s.status === 'done').length}<span class="ml-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full align-middle
+                        {done === task.subtasks.length
+                          ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}"
+                      >{Math.round(done / task.subtasks.length * 100)}%</span>{/if}</button>
                   </div>
 
                   <!-- Project -->
@@ -444,7 +516,7 @@
                       class="flex items-center gap-1 text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 rounded px-1 py-0.5 transition-colors whitespace-nowrap"
                     >
                       <span class="text-sm leading-none">{pCfg.icon}</span>
-                      <span class="text-slate-600 dark:text-slate-300">{$t(`priority.${task.priority}` as any)}</span>
+                      {#if !narrow}<span class="text-slate-600 dark:text-slate-300">{$t(`priority.${task.priority}` as any)}</span>{/if}
                       <svg class="w-2.5 h-2.5 text-slate-400 opacity-70" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 5,5 9,1"/></svg>
                     </button>
                   </div>
@@ -469,11 +541,42 @@
                   </div>
 
                   <!-- Date -->
-                  <div class="py-2.5 px-2 text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                    {formatDate(task.created_at)}
-                  </div>
+                  {#if !narrow}
+                    <div class="py-2.5 px-2 text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                      {formatDate(task.created_at)}
+                    </div>
+                  {/if}
 
                 </div>
+
+                <!-- Subtask rows -->
+                {#each (task.subtasks ?? []) as sub (sub.id)}
+                  <div class="flex items-center gap-2 pl-14 pr-4 py-1.5 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                    <span class="text-slate-300 dark:text-slate-600 text-xs shrink-0 select-none">ㄴ</span>
+                    <button
+                      onclick={() => toggleSubtask(task.id, sub)}
+                      class="shrink-0 w-3.5 h-3.5 rounded border transition-colors flex items-center justify-center
+                        {sub.status === 'done'
+                          ? 'bg-green-500 border-green-500 text-white'
+                          : 'border-slate-300 dark:border-slate-600 hover:border-brand-400'}"
+                    >
+                      {#if sub.status === 'done'}
+                        <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 10 10" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M2 5l2.5 2.5L8 3"/>
+                        </svg>
+                      {/if}
+                    </button>
+                    <span class="text-[10px] font-mono text-slate-400 dark:text-slate-500 shrink-0">{sub.ref}</span>
+                    <span class="text-xs text-slate-600 dark:text-slate-300 truncate flex-1 {sub.status === 'done' ? 'line-through text-slate-400 dark:text-slate-500' : ''}">{sub.title}</span>
+                    {#if sub.assignee}
+                      {#if sub.assignee.avatar_url}
+                        <img src={sub.assignee.avatar_url} class="w-4 h-4 rounded-full shrink-0" alt={sub.assignee.name} />
+                      {:else}
+                        <div class="w-4 h-4 rounded-full bg-brand-400 text-white text-[9px] flex items-center justify-center shrink-0">{sub.assignee.name[0]}</div>
+                      {/if}
+                    {/if}
+                  </div>
+                {/each}
               {/if}
             </div>
           {/each}
@@ -486,16 +589,10 @@
         </div>
       {/if}
     </div>
+    </div>
   {/if}
 </div>
 
-{#if selectedTask}
-  <TaskDetailPanel
-    task={selectedTask}
-    onClose={() => (selectedTask = null)}
-    onUpdate={() => { selectedTask = null; reload(); }}
-  />
-{/if}
 
 {#if statusPopup}
   {@const popup = statusPopup}

@@ -78,8 +78,8 @@
     }
   }
 
-  async function handleDroppedOutside(task: Task) {
-    const targetProjectId = get(sidebarHoverProjectId);
+  async function handleDroppedOutside(task: Task, capturedProjectId: string | null = get(sidebarHoverProjectId)) {
+    const targetProjectId = capturedProjectId;
     sidebarHoverProjectId.set(null);
 
     // Not hovering over a sidebar project — revert
@@ -114,7 +114,7 @@
         toastStore.add(`"${task.title}" → ${targetProject.name} / ${statusLabel}`, 'success');
       }
     } catch {
-      toastStore.add('태스크 이동에 실패했습니다.', 'error');
+      toastStore.add('이슈 이동에 실패했습니다.', 'error');
       columns = makeColumns(tasks);
     }
   }

@@ -4,7 +4,7 @@
   import { flip } from 'svelte/animate';
   import type { Task, TaskStatus } from '$lib/types';
   import { t } from '$lib/i18n';
-  import { draggingTask } from '$lib/stores/drag';
+  import { draggingTask, sidebarHoverProjectId } from '$lib/stores/drag';
   import TaskCard from './TaskCard.svelte';
   import TaskModal from './TaskModal.svelte';
 
@@ -28,13 +28,15 @@
     onUpdate: (status: TaskStatus, items: Task[]) => void;
     onMove: (taskId: string, toStatus: TaskStatus, newItems: Task[]) => void;
     onTaskCreated: () => void;
-    onDroppedOutside: (task: Task) => void;
+    onDroppedOutside: (task: Task, capturedProjectId: string | null) => void;
   } = $props();
 
   let showCreate = $state(false);
   const FLIP_MS = 150;
 
-  const isDragOver = $derived(tasks.some((t: any) => t.isDndShadowItem));
+  const isDragOver = $derived(
+    tasks.some((t: any) => t.isDndShadowItem) && !$sidebarHoverProjectId
+  );
 
   function handleConsider(e: CustomEvent<DndEvent<Task>>) {
     const { items, info } = e.detail;
@@ -47,8 +49,9 @@
   }
 
   function handleFinalize(e: CustomEvent<DndEvent<Task>>) {
-    // Read dragging task before clearing
+    // Capture both stores before clearing to avoid reactive timing issues
     const task = get(draggingTask);
+    const capturedProjectId = get(sidebarHoverProjectId);
     draggingTask.set(null);
 
     const newItems = e.detail.items;
@@ -59,7 +62,7 @@
 
     // Dropped outside all zones (e.g. on sidebar) — delegate to parent
     if (trigger === TRIGGERS.DROPPED_OUTSIDE_OF_ANY) {
-      if (task) onDroppedOutside(task);
+      if (task) onDroppedOutside(task, capturedProjectId);
       return;
     }
 

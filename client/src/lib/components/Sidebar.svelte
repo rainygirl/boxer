@@ -6,28 +6,55 @@
   import { t } from '$lib/i18n';
   import { get } from 'svelte/store';
   import { projectsApi } from '$lib/api/projects';
-  import { authApi } from '$lib/api/auth';
   import { draggingTask, sidebarHoverProjectId } from '$lib/stores/drag';
+  import { sidebarOpen } from '$lib/stores/sidebar';
+  import { afterNavigate } from '$app/navigation';
   import type { Project } from '$lib/types';
+
+  afterNavigate(() => sidebarOpen.set(false));
   import CreateProjectModal from './CreateProjectModal.svelte';
   import LanguageModal from './LanguageModal.svelte';
+  import EditNicknameModal from './EditNicknameModal.svelte';
 
   const { projects }: { projects: Project[] } = $props();
 
   let showCreate = $state(false);
   let showLanguageModal = $state(false);
+  let showNicknameModal = $state(false);
   let deleting = $state<string | null>(null);
   let showUserMenu = $state(false);
-  let editingName = $state(false);
-  let nameInput = $state('');
-  let savingName = $state(false);
 
   const currentProjectId = $derived($page.params.projectId);
+  const favorites = $derived(projects.filter((p) => p.is_favorite));
+
+  // Per-project expand/collapse state; auto-expand active project
+  let expandedProjects = $state(new Set<string>(currentProjectId ? [currentProjectId] : []));
+
+  $effect(() => {
+    if (currentProjectId && !expandedProjects.has(currentProjectId)) {
+      expandedProjects = new Set([...expandedProjects, currentProjectId]);
+    }
+  });
+
+  function toggleExpand(id: string) {
+    const next = new Set(expandedProjects);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    expandedProjects = next;
+  }
+
   const themeLabel = $derived(
     $themeStore === 'light' ? { icon: '🌙', label: $t('sidebar.blueMode') } :
     $themeStore === 'blue'  ? { icon: '⬛', label: $t('sidebar.blackMode') } :
                               { icon: '☀️', label: $t('sidebar.lightMode') }
   );
+
+  async function toggleFavorite(e: MouseEvent, p: Project) {
+    e.preventDefault();
+    e.stopPropagation();
+    await projectsApi.toggleFavorite(p.id);
+    await invalidate('app:projects');
+  }
 
   async function deleteProject(p: Project) {
     if (!confirm(get(t)('project.deleteConfirm', { name: p.name }))) return;
@@ -47,21 +74,8 @@
   }
 
   function openEditName() {
-    nameInput = $authStore.user?.name ?? '';
-    editingName = true;
     showUserMenu = false;
-  }
-
-  async function saveEditName() {
-    if (!nameInput.trim()) return;
-    savingName = true;
-    try {
-      const updated = await authApi.updateProfile(nameInput.trim());
-      authStore.setUser(updated);
-      editingName = false;
-    } finally {
-      savingName = false;
-    }
+    showNicknameModal = true;
   }
 
   function closeMenu(e: MouseEvent) {
@@ -101,12 +115,28 @@
 
 <svelte:window onclick={closeMenu} />
 
-<aside class="w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col h-full shrink-0">
+<aside class="
+  w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700
+  flex flex-col h-full shrink-0
+  fixed md:relative inset-y-0 left-0 z-40 md:z-auto
+  transform transition-transform duration-200
+  {$sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+">
   <!-- Logo -->
   <div class="px-4 py-4 border-b border-slate-100 dark:border-slate-700">
-    <div class="flex items-center gap-2">
-      <span class="text-xl">📦</span>
-      <span class="font-bold text-slate-800 dark:text-slate-100 text-lg">Boxer</span>
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">📦</span>
+        <span class="font-bold text-slate-800 dark:text-slate-100 text-lg">Boxer</span>
+      </div>
+      <button
+        class="md:hidden p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+        onclick={() => sidebarOpen.set(false)}
+      >
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -116,7 +146,7 @@
       href="/app/my-issues"
       class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
              {$page.url.pathname === '/app/my-issues'
-               ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400'
+               ? 'bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-400 font-medium'
                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200'}"
     >
       <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -129,6 +159,40 @@
 
   <!-- Projects -->
   <div class="flex-1 overflow-y-auto py-3 scrollbar-thin">
+
+    <!-- 즐겨찾기 섹션 -->
+    {#if favorites.length > 0}
+      <div class="px-4 mb-1">
+        <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{$t('sidebar.favorites')}</span>
+      </div>
+      <nav class="space-y-0.5 px-2 mb-3">
+        {#each favorites as p (p.id)}
+          {@const isActive = currentProjectId === p.id}
+          {@const isDragTarget = $draggingTask !== null && $sidebarHoverProjectId === p.id && !isActive}
+          <a
+            href="/app/project/{p.id}"
+            data-project-id={isActive ? null : p.id}
+            class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors group {
+              isDragTarget
+                ? 'bg-brand-100 dark:bg-brand-500/20 ring-2 ring-brand-400 dark:ring-brand-500 text-brand-700 dark:text-brand-300'
+                : isActive
+                  ? 'bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-400 font-medium'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+            }"
+          >
+            <svg class="w-3.5 h-3.5 shrink-0 text-yellow-400 fill-yellow-400" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/>
+            </svg>
+            <span class="flex-1 truncate">{p.name}</span>
+            {#if isDragTarget}
+              <span class="text-[10px] font-semibold text-brand-500 dark:text-brand-400 shrink-0">여기에 놓기</span>
+            {/if}
+          </a>
+        {/each}
+      </nav>
+    {/if}
+
+    <!-- 전체 프로젝트 섹션 -->
     <div class="flex items-center justify-between px-4 mb-1">
       <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{$t('sidebar.projects')}</span>
       <button
@@ -142,30 +206,82 @@
       {#each projects as p (p.id)}
         {@const isActive = currentProjectId === p.id}
         {@const isDragTarget = $draggingTask !== null && $sidebarHoverProjectId === p.id && !isActive}
-        <a
-          href="/app/project/{p.id}"
-          data-project-id={isActive ? null : p.id}
-          class="flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm transition-colors group {
-            isDragTarget
-              ? 'bg-brand-100 dark:bg-brand-500/20 ring-2 ring-brand-400 dark:ring-brand-500 text-brand-700 dark:text-brand-300'
-              : isActive
-                ? 'bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-400 font-medium'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-          }"
-        >
-          <span class="w-2.5 h-2.5 rounded-full shrink-0 transition-transform {isDragTarget ? 'scale-125' : ''}" style="background-color: {p.color}"></span>
-          <span class="flex-1 truncate">{p.name}</span>
-          {#if isActive}
+        {@const isExpanded = expandedProjects.has(p.id)}
+        {@const isReports = isActive && $page.url.searchParams.get('s') === 'reports'}
+        <div>
+          <div class="flex items-center group">
+            <!-- Expand/collapse toggle -->
             <button
-              onclick={(e) => { e.preventDefault(); e.stopPropagation(); deleteProject(p); }}
-              disabled={deleting === p.id}
-              class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-all text-xs px-1"
-            >✕</button>
+              onclick={(e) => { e.preventDefault(); e.stopPropagation(); toggleExpand(p.id); }}
+              class="shrink-0 w-5 h-8 flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 transition-colors"
+              aria-label="toggle"
+            >
+              <svg class="w-2 h-2 transition-transform duration-150 {isExpanded ? 'rotate-90' : ''}" viewBox="0 0 6 10" fill="currentColor">
+                <path d="M1 1l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              </svg>
+            </button>
+            <a
+              href="/app/project/{p.id}"
+              data-project-id={isActive ? null : p.id}
+              class="flex-1 flex items-center gap-2 px-1.5 py-2 rounded-lg text-sm transition-colors min-w-0 {
+                isDragTarget
+                  ? 'bg-brand-100 dark:bg-brand-500/20 ring-2 ring-brand-400 dark:ring-brand-500 text-brand-700 dark:text-brand-300'
+                  : isActive
+                    ? 'bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-400 font-medium'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }"
+            >
+              <span class="w-2.5 h-2.5 rounded-full shrink-0 transition-transform {isDragTarget ? 'scale-125' : ''}" style="background-color: {p.color}"></span>
+              <span class="flex-1 truncate">{p.name}</span>
+              <!-- 별 즐겨찾기 버튼 (hover 시 표시, 즐겨찾기면 항상 표시) -->
+              <button
+                onclick={(e) => toggleFavorite(e, p)}
+                class="shrink-0 transition-all {p.is_favorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}"
+                title={p.is_favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+              >
+                <svg class="w-3.5 h-3.5 transition-colors {p.is_favorite ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300 dark:text-slate-600 fill-none hover:text-yellow-400'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/>
+                </svg>
+              </button>
+              {#if isActive && !isDragTarget}
+                <button
+                  onclick={(e) => { e.preventDefault(); e.stopPropagation(); deleteProject(p); }}
+                  disabled={deleting === p.id}
+                  class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-all text-xs shrink-0"
+                >✕</button>
+              {/if}
+              {#if isDragTarget}
+                <span class="text-[10px] font-semibold text-brand-500 dark:text-brand-400 shrink-0">여기에 놓기</span>
+              {/if}
+            </a>
+          </div>
+          {#if isExpanded}
+            <div data-project-id={isActive ? null : p.id} class="ml-5 pl-2 border-l border-slate-200 dark:border-slate-700 flex flex-col gap-0.5 mb-0.5">
+              <a
+                href="/app/project/{p.id}?s=issues"
+                class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors {isActive && !isReports
+                  ? 'text-brand-600 dark:text-brand-400 font-medium'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}"
+              >
+                <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                {$t('nav.issues')}
+              </a>
+              <a
+                href="/app/project/{p.id}?s=reports"
+                class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors {isReports
+                  ? 'text-brand-600 dark:text-brand-400 font-medium'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}"
+              >
+                <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                {$t('nav.reports')}
+              </a>
+            </div>
           {/if}
-          {#if isDragTarget}
-            <span class="text-[10px] font-semibold text-brand-500 dark:text-brand-400 shrink-0">여기에 놓기</span>
-          {/if}
-        </a>
+        </div>
       {/each}
     </nav>
 
@@ -216,28 +332,6 @@
         </div>
       {/if}
 
-      <!-- 닉네임 편집 인라인 -->
-      {#if editingName}
-        <div class="flex items-center gap-2 mb-1">
-          <input
-            autofocus
-            bind:value={nameInput}
-            onkeydown={(e) => { if (e.key === 'Enter') saveEditName(); if (e.key === 'Escape') editingName = false; }}
-            class="flex-1 text-sm px-2.5 py-1.5 border border-brand-500 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none"
-            placeholder={$t('sidebar.nicknamePlaceholder')}
-          />
-          <button
-            onclick={saveEditName}
-            disabled={savingName || !nameInput.trim()}
-            class="text-xs px-2.5 py-1.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg disabled:opacity-50 transition-colors shrink-0"
-          >{savingName ? '...' : $t('common.save')}</button>
-          <button
-            onclick={() => (editingName = false)}
-            class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-          >✕</button>
-        </div>
-      {/if}
-
       <!-- User row (click to open menu) -->
       <button
         onclick={(e) => { e.stopPropagation(); showUserMenu = !showUserMenu; }}
@@ -266,4 +360,8 @@
 
 {#if showLanguageModal}
   <LanguageModal onClose={() => (showLanguageModal = false)} />
+{/if}
+
+{#if showNicknameModal}
+  <EditNicknameModal onClose={() => (showNicknameModal = false)} />
 {/if}
