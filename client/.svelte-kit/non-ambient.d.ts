@@ -27,25 +27,31 @@ export {};
 
 declare module "$app/types" {
 	export interface AppTypes {
-		RouteId(): "/" | "/app" | "/app/my-issues" | "/app/project" | "/app/project/[projectId]" | "/app/project/[projectId]/issue" | "/app/project/[projectId]/issue/[taskId]" | "/auth" | "/auth/callback" | "/login";
+		RouteId(): "/" | "/app" | "/app/member-issues" | "/app/member-issues/[userId]" | "/app/members" | "/app/my-issues" | "/app/notifications" | "/app/project" | "/app/project/[projectId]" | "/app/project/[projectId]/issue" | "/app/project/[projectId]/issue/[taskId]" | "/auth" | "/auth/callback" | "/auth/google-callback" | "/login";
 		RouteParams(): {
+			"/app/member-issues/[userId]": { userId: string };
 			"/app/project/[projectId]": { projectId: string };
 			"/app/project/[projectId]/issue": { projectId: string };
 			"/app/project/[projectId]/issue/[taskId]": { projectId: string; taskId: string }
 		};
 		LayoutParams(): {
-			"/": { projectId?: string; taskId?: string };
-			"/app": { projectId?: string; taskId?: string };
+			"/": { userId?: string; projectId?: string; taskId?: string };
+			"/app": { userId?: string; projectId?: string; taskId?: string };
+			"/app/member-issues": { userId?: string };
+			"/app/member-issues/[userId]": { userId: string };
+			"/app/members": Record<string, never>;
 			"/app/my-issues": Record<string, never>;
+			"/app/notifications": Record<string, never>;
 			"/app/project": { projectId?: string; taskId?: string };
 			"/app/project/[projectId]": { projectId: string; taskId?: string };
 			"/app/project/[projectId]/issue": { projectId: string; taskId?: string };
 			"/app/project/[projectId]/issue/[taskId]": { projectId: string; taskId: string };
 			"/auth": Record<string, never>;
 			"/auth/callback": Record<string, never>;
+			"/auth/google-callback": Record<string, never>;
 			"/login": Record<string, never>
 		};
-		Pathname(): "/" | "/app" | "/app/my-issues" | `/app/project/${string}` & {} | `/app/project/${string}/issue/${string}` & {} | "/auth/callback" | "/login";
+		Pathname(): "/" | "/app" | `/app/member-issues/${string}` & {} | "/app/members" | "/app/my-issues" | "/app/notifications" | `/app/project/${string}` & {} | `/app/project/${string}/issue/${string}` & {} | "/auth/callback" | "/auth/google-callback" | "/login";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
 		Asset(): string & {};
 	}

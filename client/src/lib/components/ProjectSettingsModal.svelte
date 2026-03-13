@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { invalidate } from '$app/navigation';
+  import { invalidate, goto } from '$app/navigation';
   import { projectsApi } from '$lib/api/projects';
   import type { Project } from '$lib/types';
   import { t } from '$lib/i18n';
+  import { get } from 'svelte/store';
 
   const { project, onClose, onOpenMembers }: { project: Project; onClose: () => void; onOpenMembers: () => void } = $props();
 
@@ -12,6 +13,20 @@
   let nameError = $state('');
   let saving = $state(false);
   let saved = $state(false);
+  let deleting = $state(false);
+
+  async function handleDelete() {
+    if (!confirm(get(t)('project.deleteConfirm', { name: project.name }))) return;
+    deleting = true;
+    try {
+      await projectsApi.delete(project.id);
+      await invalidate('app:projects');
+      onClose();
+      goto('/app');
+    } finally {
+      deleting = false;
+    }
+  }
   let nameInputEl = $state<HTMLInputElement | null>(null);
 
   $effect(() => {
@@ -125,17 +140,23 @@
           onclick={() => { onClose(); onOpenMembers(); }}
           class="text-[12px] text-slate-400 dark:text-slate-500 hover:text-brand-500 dark:hover:text-brand-400 underline underline-offset-2 transition-colors"
         >{$t('project.manageMembers')}</button>
-        <div class="flex items-center gap-2">
-        <button
-          type="submit"
-          disabled={!!keyError || !!nameError || saving || saved}
-          class="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                 {saved
-                   ? 'bg-green-500 text-white'
-                   : 'bg-brand-500 hover:bg-brand-600 text-white disabled:opacity-50'}"
-        >
-          {saved ? $t('common.saved') : saving ? $t('common.saving') : $t('common.save')}
-        </button>
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            onclick={handleDelete}
+            disabled={deleting}
+            class="text-[12px] text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400 underline underline-offset-2 transition-colors disabled:opacity-50"
+          >{deleting ? '...' : $t('project.delete')}</button>
+          <button
+            type="submit"
+            disabled={!!keyError || !!nameError || saving || saved}
+            class="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                   {saved
+                     ? 'bg-green-500 text-white'
+                     : 'bg-brand-500 hover:bg-brand-600 text-white disabled:opacity-50'}"
+          >
+            {saved ? $t('common.saved') : saving ? $t('common.saving') : $t('common.save')}
+          </button>
         </div>
       </div>
     </form>

@@ -11,7 +11,11 @@ export const nodes = [
 	() => import('./nodes/7'),
 	() => import('./nodes/8'),
 	() => import('./nodes/9'),
-	() => import('./nodes/10')
+	() => import('./nodes/10'),
+	() => import('./nodes/11'),
+	() => import('./nodes/12'),
+	() => import('./nodes/13'),
+	() => import('./nodes/14')
 ];
 
 export const server_loads = [];
@@ -19,11 +23,15 @@ export const server_loads = [];
 export const dictionary = {
 		"/": [4],
 		"/app": [5,[2]],
-		"/app/my-issues": [6,[2]],
-		"/app/project/[projectId]": [7,[2,3]],
-		"/app/project/[projectId]/issue/[taskId]": [8,[2,3]],
-		"/auth/callback": [9],
-		"/login": [10]
+		"/app/member-issues/[userId]": [6,[2]],
+		"/app/members": [7,[2]],
+		"/app/my-issues": [8,[2]],
+		"/app/notifications": [9,[2]],
+		"/app/project/[projectId]": [10,[2,3]],
+		"/app/project/[projectId]/issue/[taskId]": [11,[2,3]],
+		"/auth/callback": [12],
+		"/auth/google-callback": [13],
+		"/login": [14]
 	};
 
 export const hooks = {

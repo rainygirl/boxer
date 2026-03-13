@@ -2,6 +2,7 @@ export const ko = {
   // Project
   'project.new': '새 프로젝트',
   'project.noProjects': '아직 프로젝트가 없어요.',
+  'project.delete': '프로젝트 삭제',
   'project.deleteConfirm': '"{name}" 프로젝트를 삭제할까요?',
   'project.namePlaceholder': '프로젝트 이름',
   'project.descriptionPlaceholder': '설명 (선택)',
@@ -49,6 +50,8 @@ export const ko = {
   'member.notFound': '해당 이메일로 가입된 사용자가 없습니다.',
   'member.alreadyMember': '이미 멤버입니다.',
   'member.inviteFailed': '초대에 실패했습니다.',
+  'member.inviteSuccess': '초대를 보냈습니다!',
+  'member.noOwnedProjects': '초대할 수 있는 프로젝트가 없습니다.',
   'member.removeConfirm': '{name}을(를) 프로젝트에서 제거할까요?',
 
   // Sidebar
@@ -109,11 +112,13 @@ export const ko = {
   // My Issues
   'myIssues.title': '나의 이슈',
   'myIssues.empty': '나에게 할당된 이슈가 없습니다.',
+  'myIssues.search': '이슈 검색…',
 
   // Sidebar extra
   'sidebar.myIssues': '나의 이슈',
   'sidebar.blueMode': '블루 다크 모드',
   'sidebar.blackMode': '블랙 다크 모드',
+  'sidebar.members': '멤버 목록',
 
   // Nav
   'nav.issues': '이슈',
@@ -139,6 +144,7 @@ export const ko = {
   'time.minutes': '분',
   'time.hours': '시간',
   'time.days': '일',
+  'time.justNow': '방금',
   'report.cycleTimeCount': '{count}건',
   'project.settingsTitle': '프로젝트 설정',
   'project.nameLabel': '프로젝트명',
@@ -155,6 +161,11 @@ export const ko = {
   'project.keyValidation': '알파벳(A-Z)만, 최대 20자',
   'common.saving': '저장 중…',
   'common.saved': '저장됨 ✓',
+  'comment.title': '댓글',
+  'comment.placeholder': '댓글을 입력하세요… (Ctrl+Enter로 등록, @로 멘션)',
+  'comment.submit': '등록',
+  'comment.submitting': '등록 중…',
+  'comment.delete': '댓글 삭제',
 
   // Dependencies
   'dependency.title': '의존 이슈',
@@ -189,12 +200,21 @@ export const ko = {
   'activity.due_date_removed': '마감일을 제거했습니다',
   'activity.project_moved': '프로젝트를 {from}에서 {to}{ro} 이동했습니다',
   'activity.unassigned': '없음',
+  'activity.commented': '댓글을 남겼습니다',
+  'notification.title': '알림',
+  'notification.markAllRead': '모두 읽음',
+  'notification.mention': '{actor}님이 {ref}에서 회원님을 멘션했습니다',
+  'notification.assigned': '{actor}님이 {ref}에 회원님을 담당자로 지정했습니다',
+  'notification.someone': '누군가',
+  'notification.anIssue': '이슈',
+  'notification.empty': '알림이 없습니다',
 };
 
 export const en: typeof ko = {
   // Project
   'project.new': 'New Project',
   'project.noProjects': 'No projects yet.',
+  'project.delete': 'Delete project',
   'project.deleteConfirm': 'Delete project "{name}"?',
   'project.namePlaceholder': 'Project name',
   'project.descriptionPlaceholder': 'Description (optional)',
@@ -242,6 +262,8 @@ export const en: typeof ko = {
   'member.notFound': 'No user found with that email.',
   'member.alreadyMember': 'Already a member.',
   'member.inviteFailed': 'Invitation failed.',
+  'member.inviteSuccess': 'Invitation sent!',
+  'member.noOwnedProjects': 'You have no owned projects.',
   'member.removeConfirm': 'Remove {name} from the project?',
 
   // Sidebar
@@ -302,11 +324,13 @@ export const en: typeof ko = {
   // My Issues
   'myIssues.title': 'My Issues',
   'myIssues.empty': 'No issues assigned to you.',
+  'myIssues.search': 'Search issues…',
 
   // Sidebar extra
   'sidebar.myIssues': 'My Issues',
   'sidebar.blueMode': 'Blue Dark Mode',
   'sidebar.blackMode': 'Black Dark Mode',
+  'sidebar.members': 'Members',
 
   // Nav
   'nav.issues': 'Issues',
@@ -332,6 +356,7 @@ export const en: typeof ko = {
   'time.minutes': 'min',
   'time.hours': 'hr',
   'time.days': 'day',
+  'time.justNow': 'just now',
   'report.cycleTimeCount': '{count} tasks',
   'project.settingsTitle': 'Project Settings',
   'project.nameLabel': 'Project Name',
@@ -348,6 +373,11 @@ export const en: typeof ko = {
   'project.keyValidation': 'Letters (A-Z) only, max 20',
   'common.saving': 'Saving…',
   'common.saved': 'Saved ✓',
+  'comment.title': 'Comments',
+  'comment.placeholder': 'Write a comment… (Ctrl+Enter to post, @ to mention)',
+  'comment.submit': 'Comment',
+  'comment.submitting': 'Posting…',
+  'comment.delete': 'Delete comment',
 
   // Dependencies
   'dependency.title': 'Dependencies',
@@ -382,11 +412,20 @@ export const en: typeof ko = {
   'activity.due_date_removed': 'removed the due date',
   'activity.project_moved': 'moved from {from} to {to}',
   'activity.unassigned': 'unassigned',
+  'activity.commented': 'commented',
+  'notification.title': 'Notifications',
+  'notification.markAllRead': 'Mark all read',
+  'notification.mention': '{actor} mentioned you in {ref}',
+  'notification.assigned': '{actor} assigned you to {ref}',
+  'notification.someone': 'Someone',
+  'notification.anIssue': 'an issue',
+  'notification.empty': 'No notifications',
 };
 
 export const es: typeof ko = {
   'project.new': 'Nuevo Proyecto',
   'project.noProjects': 'Aún no hay proyectos.',
+  'project.delete': 'Eliminar proyecto',
   'project.deleteConfirm': '¿Eliminar el proyecto "{name}"?',
   'project.namePlaceholder': 'Nombre del proyecto',
   'project.descriptionPlaceholder': 'Descripción (opcional)',
@@ -428,6 +467,8 @@ export const es: typeof ko = {
   'member.notFound': 'No se encontró usuario con ese email.',
   'member.alreadyMember': 'Ya es miembro.',
   'member.inviteFailed': 'Invitación fallida.',
+  'member.inviteSuccess': '¡Invitación enviada!',
+  'member.noOwnedProjects': 'No tienes proyectos propios.',
   'member.removeConfirm': '¿Eliminar a {name} del proyecto?',
   'sidebar.projects': 'Proyectos',
   'sidebar.favorites': 'Favoritos',
@@ -468,9 +509,11 @@ export const es: typeof ko = {
   'common.save': 'Guardar',
   'myIssues.title': 'Mis Tareas',
   'myIssues.empty': 'No tienes tareas asignadas.',
+  'myIssues.search': 'Buscar tareas…',
   'sidebar.myIssues': 'Mis Tareas',
   'sidebar.blueMode': 'Modo Oscuro Azul',
   'sidebar.blackMode': 'Modo Oscuro Negro',
+  'sidebar.members': 'Miembros',
 
   'nav.issues': 'Tareas',
   'nav.reports': 'Informes',
@@ -489,6 +532,7 @@ export const es: typeof ko = {
   'time.minutes': 'min',
   'time.hours': 'hr',
   'time.days': 'día',
+  'time.justNow': 'ahora mismo',
   'report.cycleTimeCount': '{count} tareas',
   'project.settingsTitle': 'Configuración del Proyecto',
   'project.nameLabel': 'Nombre del Proyecto',
@@ -505,6 +549,11 @@ export const es: typeof ko = {
   'project.keyValidation': 'Solo letras (A-Z), máx. 20',
   'common.saving': 'Guardando…',
   'common.saved': 'Guardado ✓',
+  'comment.title': 'Comentarios',
+  'comment.placeholder': 'Escribe un comentario… (Ctrl+Enter para publicar, @ para mencionar)',
+  'comment.submit': 'Comentar',
+  'comment.submitting': 'Publicando…',
+  'comment.delete': 'Eliminar comentario',
 
   // Dependencies
   'dependency.title': 'Dependencias',
@@ -538,11 +587,20 @@ export const es: typeof ko = {
   'activity.due_date_removed': 'eliminó la fecha límite',
   'activity.project_moved': 'movió de {from} a {to}',
   'activity.unassigned': 'sin asignar',
+  'activity.commented': 'comentó',
+  'notification.title': 'Notificaciones',
+  'notification.markAllRead': 'Marcar todo como leído',
+  'notification.mention': '{actor} te mencionó en {ref}',
+  'notification.assigned': '{actor} te asignó a {ref}',
+  'notification.someone': 'Alguien',
+  'notification.anIssue': 'un issue',
+  'notification.empty': 'Sin notificaciones',
 };
 
 export const fr: typeof ko = {
   'project.new': 'Nouveau Projet',
   'project.noProjects': 'Pas encore de projets.',
+  'project.delete': 'Supprimer le projet',
   'project.deleteConfirm': 'Supprimer le projet "{name}" ?',
   'project.namePlaceholder': 'Nom du projet',
   'project.descriptionPlaceholder': 'Description (optionnel)',
@@ -584,6 +642,8 @@ export const fr: typeof ko = {
   'member.notFound': 'Aucun utilisateur trouvé avec cet email.',
   'member.alreadyMember': 'Déjà membre.',
   'member.inviteFailed': 'Échec de l\'invitation.',
+  'member.inviteSuccess': 'Invitation envoyée !',
+  'member.noOwnedProjects': "Vous n'avez aucun projet en propriété.",
   'member.removeConfirm': 'Retirer {name} du projet ?',
   'sidebar.projects': 'Projets',
   'sidebar.favorites': 'Favoris',
@@ -624,9 +684,11 @@ export const fr: typeof ko = {
   'common.save': 'Enregistrer',
   'myIssues.title': 'Mes Tâches',
   'myIssues.empty': 'Aucune tâche assignée.',
+  'myIssues.search': 'Rechercher des tâches…',
   'sidebar.myIssues': 'Mes Tâches',
   'sidebar.blueMode': 'Mode Sombre Bleu',
   'sidebar.blackMode': 'Mode Sombre Noir',
+  'sidebar.members': 'Membres',
 
   'nav.issues': 'Tâches',
   'nav.reports': 'Rapports',
@@ -645,6 +707,7 @@ export const fr: typeof ko = {
   'time.minutes': 'min',
   'time.hours': 'h',
   'time.days': 'j',
+  'time.justNow': "à l'instant",
   'report.cycleTimeCount': '{count} tâches',
   'project.settingsTitle': 'Paramètres du Projet',
   'project.nameLabel': 'Nom du Projet',
@@ -661,6 +724,11 @@ export const fr: typeof ko = {
   'project.keyValidation': 'Lettres (A-Z) uniquement, max. 20',
   'common.saving': 'Enregistrement…',
   'common.saved': 'Enregistré ✓',
+  'comment.title': 'Commentaires',
+  'comment.placeholder': 'Écrire un commentaire… (Ctrl+Entrée pour publier, @ pour mentionner)',
+  'comment.submit': 'Commenter',
+  'comment.submitting': 'Publication…',
+  'comment.delete': 'Supprimer le commentaire',
 
   // Dependencies
   'dependency.title': 'Dépendances',
@@ -694,11 +762,20 @@ export const fr: typeof ko = {
   'activity.due_date_removed': 'a supprimé la date limite',
   'activity.project_moved': 'a déplacé de {from} à {to}',
   'activity.unassigned': 'non assigné',
+  'activity.commented': 'a commenté',
+  'notification.title': 'Notifications',
+  'notification.markAllRead': 'Tout marquer comme lu',
+  'notification.mention': '{actor} vous a mentionné dans {ref}',
+  'notification.assigned': '{actor} vous a assigné à {ref}',
+  'notification.someone': 'Quelqu\'un',
+  'notification.anIssue': 'un problème',
+  'notification.empty': 'Aucune notification',
 };
 
 export const ja: typeof ko = {
   'project.new': '新しいプロジェクト',
   'project.noProjects': 'プロジェクトはまだありません。',
+  'project.delete': 'プロジェクトを削除',
   'project.deleteConfirm': '「{name}」を削除しますか？',
   'project.namePlaceholder': 'プロジェクト名',
   'project.descriptionPlaceholder': '説明（任意）',
@@ -740,6 +817,8 @@ export const ja: typeof ko = {
   'member.notFound': 'そのメールのユーザーが見つかりません。',
   'member.alreadyMember': 'すでにメンバーです。',
   'member.inviteFailed': '招待に失敗しました。',
+  'member.inviteSuccess': '招待を送りました！',
+  'member.noOwnedProjects': 'オーナーのプロジェクトがありません。',
   'member.removeConfirm': '{name}をプロジェクトから削除しますか？',
   'sidebar.projects': 'プロジェクト',
   'sidebar.favorites': 'お気に入り',
@@ -780,9 +859,11 @@ export const ja: typeof ko = {
   'common.save': '保存',
   'myIssues.title': '自分の課題',
   'myIssues.empty': '割り当てられた課題はありません。',
+  'myIssues.search': '課題を検索…',
   'sidebar.myIssues': '自分の課題',
   'sidebar.blueMode': 'ブルーダークモード',
   'sidebar.blackMode': 'ブラックダークモード',
+  'sidebar.members': 'メンバー',
 
   'nav.issues': 'イシュー',
   'nav.reports': 'レポート',
@@ -801,6 +882,7 @@ export const ja: typeof ko = {
   'time.minutes': '分',
   'time.hours': '時間',
   'time.days': '日',
+  'time.justNow': 'たった今',
   'report.cycleTimeCount': '{count}件',
   'project.settingsTitle': 'プロジェクト設定',
   'project.nameLabel': 'プロジェクト名',
@@ -817,6 +899,11 @@ export const ja: typeof ko = {
   'project.keyValidation': '英字(A-Z)のみ、最大20文字',
   'common.saving': '保存中…',
   'common.saved': '保存済み ✓',
+  'comment.title': 'コメント',
+  'comment.placeholder': 'コメントを入力… (Ctrl+Enterで投稿、@でメンション)',
+  'comment.submit': '投稿',
+  'comment.submitting': '投稿中…',
+  'comment.delete': 'コメントを削除',
 
   // Dependencies
   'dependency.title': '依存イシュー',
@@ -850,11 +937,20 @@ export const ja: typeof ko = {
   'activity.due_date_removed': '期限を削除しました',
   'activity.project_moved': 'プロジェクトを{from}から{to}に移動しました',
   'activity.unassigned': '未割り当て',
+  'activity.commented': 'コメントしました',
+  'notification.title': '通知',
+  'notification.markAllRead': 'すべて既読にする',
+  'notification.mention': '{actor}さんが{ref}であなたをメンションしました',
+  'notification.assigned': '{actor}さんが{ref}にあなたを担当者に設定しました',
+  'notification.someone': '誰か',
+  'notification.anIssue': 'タスク',
+  'notification.empty': '通知はありません',
 };
 
 export const zhHans: typeof ko = {
   'project.new': '新建项目',
   'project.noProjects': '暂无项目。',
+  'project.delete': '删除项目',
   'project.deleteConfirm': '删除项目 "{name}"？',
   'project.namePlaceholder': '项目名称',
   'project.descriptionPlaceholder': '描述（可选）',
@@ -896,6 +992,8 @@ export const zhHans: typeof ko = {
   'member.notFound': '未找到该邮箱的用户。',
   'member.alreadyMember': '已是成员。',
   'member.inviteFailed': '邀请失败。',
+  'member.inviteSuccess': '邀请已发送！',
+  'member.noOwnedProjects': '您没有拥有的项目。',
   'member.removeConfirm': '从项目中移除 {name}？',
   'sidebar.projects': '项目',
   'sidebar.favorites': '收藏',
@@ -936,9 +1034,11 @@ export const zhHans: typeof ko = {
   'common.save': '保存',
   'myIssues.title': '我的任务',
   'myIssues.empty': '没有分配给您的任务。',
+  'myIssues.search': '搜索任务…',
   'sidebar.myIssues': '我的任务',
   'sidebar.blueMode': '蓝色深色模式',
   'sidebar.blackMode': '黑色深色模式',
+  'sidebar.members': '成员',
 
   'nav.issues': '问题',
   'nav.reports': '报告',
@@ -957,6 +1057,7 @@ export const zhHans: typeof ko = {
   'time.minutes': '分钟',
   'time.hours': '小时',
   'time.days': '天',
+  'time.justNow': '刚刚',
   'report.cycleTimeCount': '{count}件',
   'project.settingsTitle': '项目设置',
   'project.nameLabel': '项目名称',
@@ -973,6 +1074,11 @@ export const zhHans: typeof ko = {
   'project.keyValidation': '仅限字母(A-Z)，最多20个',
   'common.saving': '保存中…',
   'common.saved': '已保存 ✓',
+  'comment.title': '评论',
+  'comment.placeholder': '写评论… (Ctrl+Enter 发布，@ 提及)',
+  'comment.submit': '发布',
+  'comment.submitting': '发布中…',
+  'comment.delete': '删除评论',
 
   // Dependencies
   'dependency.title': '依赖问题',
@@ -1006,11 +1112,20 @@ export const zhHans: typeof ko = {
   'activity.due_date_removed': '删除了截止日期',
   'activity.project_moved': '从{from}移至{to}',
   'activity.unassigned': '未分配',
+  'activity.commented': '发表了评论',
+  'notification.title': '通知',
+  'notification.markAllRead': '全部已读',
+  'notification.mention': '{actor} 在 {ref} 提及了你',
+  'notification.assigned': '{actor} 将你分配到 {ref}',
+  'notification.someone': '某人',
+  'notification.anIssue': '某个任务',
+  'notification.empty': '暂无通知',
 };
 
 export const zhHant: typeof ko = {
   'project.new': '新增專案',
   'project.noProjects': '尚無專案。',
+  'project.delete': '刪除專案',
   'project.deleteConfirm': '刪除專案「{name}」？',
   'project.namePlaceholder': '專案名稱',
   'project.descriptionPlaceholder': '描述（選填）',
@@ -1052,6 +1167,8 @@ export const zhHant: typeof ko = {
   'member.notFound': '找不到該電子郵件的使用者。',
   'member.alreadyMember': '已是成員。',
   'member.inviteFailed': '邀請失敗。',
+  'member.inviteSuccess': '邀請已發送！',
+  'member.noOwnedProjects': '您沒有擁有的專案。',
   'member.removeConfirm': '從專案中移除 {name}？',
   'sidebar.projects': '專案',
   'sidebar.favorites': '收藏',
@@ -1092,9 +1209,11 @@ export const zhHant: typeof ko = {
   'common.save': '儲存',
   'myIssues.title': '我的任務',
   'myIssues.empty': '沒有指派給您的任務。',
+  'myIssues.search': '搜尋任務…',
   'sidebar.myIssues': '我的任務',
   'sidebar.blueMode': '藍色深色模式',
   'sidebar.blackMode': '黑色深色模式',
+  'sidebar.members': '成員',
 
   'nav.issues': '問題',
   'nav.reports': '報告',
@@ -1113,6 +1232,7 @@ export const zhHant: typeof ko = {
   'time.minutes': '分鐘',
   'time.hours': '小時',
   'time.days': '天',
+  'time.justNow': '剛剛',
   'report.cycleTimeCount': '{count}件',
   'project.settingsTitle': '專案設定',
   'project.nameLabel': '專案名稱',
@@ -1129,6 +1249,11 @@ export const zhHant: typeof ko = {
   'project.keyValidation': '僅限字母(A-Z)，最多20個',
   'common.saving': '儲存中…',
   'common.saved': '已儲存 ✓',
+  'comment.title': '留言',
+  'comment.placeholder': '寫留言… (Ctrl+Enter 發布，@ 提及)',
+  'comment.submit': '發布',
+  'comment.submitting': '發布中…',
+  'comment.delete': '刪除留言',
 
   // Dependencies
   'dependency.title': '依賴議題',
@@ -1162,11 +1287,20 @@ export const zhHant: typeof ko = {
   'activity.due_date_removed': '刪除了截止日期',
   'activity.project_moved': '從{from}移至{to}',
   'activity.unassigned': '未分配',
+  'activity.commented': '發表了留言',
+  'notification.title': '通知',
+  'notification.markAllRead': '全部已讀',
+  'notification.mention': '{actor} 在 {ref} 提及了你',
+  'notification.assigned': '{actor} 將你指派至 {ref}',
+  'notification.someone': '某人',
+  'notification.anIssue': '某個任務',
+  'notification.empty': '沒有通知',
 };
 
 export const yue: typeof ko = {
   'project.new': '新增項目',
   'project.noProjects': '仲未有項目。',
+  'project.delete': '刪除項目',
   'project.deleteConfirm': '刪除項目「{name}」？',
   'project.namePlaceholder': '項目名稱',
   'project.descriptionPlaceholder': '描述（可選）',
@@ -1208,6 +1342,8 @@ export const yue: typeof ko = {
   'member.notFound': '搵唔到呢個電郵嘅用戶。',
   'member.alreadyMember': '已經係成員。',
   'member.inviteFailed': '邀請失敗。',
+  'member.inviteSuccess': '邀請已發送！',
+  'member.noOwnedProjects': '你冇擁有嘅項目。',
   'member.removeConfirm': '將 {name} 從項目中移除？',
   'sidebar.projects': '項目',
   'sidebar.favorites': '我的最愛',
@@ -1248,9 +1384,11 @@ export const yue: typeof ko = {
   'common.save': '儲存',
   'myIssues.title': '我嘅任務',
   'myIssues.empty': '冇分配俾你嘅任務。',
+  'myIssues.search': '搜尋任務…',
   'sidebar.myIssues': '我嘅任務',
   'sidebar.blueMode': '藍色深色模式',
   'sidebar.blackMode': '黑色深色模式',
+  'sidebar.members': '成員',
 
   'nav.issues': '事項',
   'nav.reports': '報告',
@@ -1269,6 +1407,7 @@ export const yue: typeof ko = {
   'time.minutes': '分鐘',
   'time.hours': '小時',
   'time.days': '日',
+  'time.justNow': '啱啱',
   'report.cycleTimeCount': '{count}件',
   'project.settingsTitle': '專案設定',
   'project.nameLabel': '專案名稱',
@@ -1285,6 +1424,11 @@ export const yue: typeof ko = {
   'project.keyValidation': '僅限字母(A-Z)，最多20個',
   'common.saving': '儲存中…',
   'common.saved': '已儲存 ✓',
+  'comment.title': '留言',
+  'comment.placeholder': '寫留言… (Ctrl+Enter 發佈，@ 提及)',
+  'comment.submit': '發佈',
+  'comment.submitting': '發佈中…',
+  'comment.delete': '刪除留言',
 
   // Dependencies
   'dependency.title': '依賴議題',
@@ -1318,11 +1462,20 @@ export const yue: typeof ko = {
   'activity.due_date_removed': '刪除咗截止日期',
   'activity.project_moved': '由{from}移至{to}',
   'activity.unassigned': '未分配',
+  'activity.commented': '留咗言',
+  'notification.title': '通知',
+  'notification.markAllRead': '全部已讀',
+  'notification.mention': '{actor} 喺 {ref} 提及咗你',
+  'notification.assigned': '{actor} 將你指派至 {ref}',
+  'notification.someone': '有人',
+  'notification.anIssue': '某個議題',
+  'notification.empty': '冇通知',
 };
 
 export const vi: typeof ko = {
   'project.new': 'Dự án mới',
   'project.noProjects': 'Chưa có dự án nào.',
+  'project.delete': 'Xóa dự án',
   'project.deleteConfirm': 'Xóa dự án "{name}"?',
   'project.namePlaceholder': 'Tên dự án',
   'project.descriptionPlaceholder': 'Mô tả (tùy chọn)',
@@ -1364,6 +1517,8 @@ export const vi: typeof ko = {
   'member.notFound': 'Không tìm thấy người dùng với email đó.',
   'member.alreadyMember': 'Đã là thành viên.',
   'member.inviteFailed': 'Lời mời thất bại.',
+  'member.inviteSuccess': 'Đã gửi lời mời!',
+  'member.noOwnedProjects': 'Bạn không có dự án sở hữu.',
   'member.removeConfirm': 'Xóa {name} khỏi dự án?',
   'sidebar.projects': 'Dự án',
   'sidebar.favorites': 'Yêu thích',
@@ -1404,9 +1559,11 @@ export const vi: typeof ko = {
   'common.save': 'Lưu',
   'myIssues.title': 'Nhiệm vụ của tôi',
   'myIssues.empty': 'Không có nhiệm vụ nào được giao cho bạn.',
+  'myIssues.search': 'Tìm kiếm nhiệm vụ…',
   'sidebar.myIssues': 'Nhiệm vụ của tôi',
   'sidebar.blueMode': 'Chế độ Tối Xanh',
   'sidebar.blackMode': 'Chế độ Tối Đen',
+  'sidebar.members': 'Thành viên',
 
   'nav.issues': 'Vấn đề',
   'nav.reports': 'Báo cáo',
@@ -1425,6 +1582,7 @@ export const vi: typeof ko = {
   'time.minutes': 'phút',
   'time.hours': 'giờ',
   'time.days': 'ngày',
+  'time.justNow': 'vừa xong',
   'report.cycleTimeCount': '{count} nhiệm vụ',
   'project.settingsTitle': 'Cài đặt Dự án',
   'project.nameLabel': 'Tên Dự án',
@@ -1441,6 +1599,11 @@ export const vi: typeof ko = {
   'project.keyValidation': 'Chỉ chữ cái (A-Z), tối đa 20',
   'common.saving': 'Đang lưu…',
   'common.saved': 'Đã lưu ✓',
+  'comment.title': 'Bình luận',
+  'comment.placeholder': 'Viết bình luận… (Ctrl+Enter để gửi, @ để đề cập)',
+  'comment.submit': 'Bình luận',
+  'comment.submitting': 'Đang gửi…',
+  'comment.delete': 'Xóa bình luận',
 
   // Dependencies
   'dependency.title': 'Phụ thuộc',
@@ -1474,11 +1637,20 @@ export const vi: typeof ko = {
   'activity.due_date_removed': 'đã xóa hạn chót',
   'activity.project_moved': 'đã chuyển từ {from} sang {to}',
   'activity.unassigned': 'chưa phân công',
+  'activity.commented': 'đã bình luận',
+  'notification.title': 'Thông báo',
+  'notification.markAllRead': 'Đánh dấu đã đọc tất cả',
+  'notification.mention': '{actor} đã đề cập đến bạn trong {ref}',
+  'notification.assigned': '{actor} đã giao {ref} cho bạn',
+  'notification.someone': 'Ai đó',
+  'notification.anIssue': 'một vấn đề',
+  'notification.empty': 'Không có thông báo',
 };
 
 export const id: typeof ko = {
   'project.new': 'Proyek Baru',
   'project.noProjects': 'Belum ada proyek.',
+  'project.delete': 'Hapus proyek',
   'project.deleteConfirm': 'Hapus proyek "{name}"?',
   'project.namePlaceholder': 'Nama proyek',
   'project.descriptionPlaceholder': 'Deskripsi (opsional)',
@@ -1520,6 +1692,8 @@ export const id: typeof ko = {
   'member.notFound': 'Pengguna dengan email tersebut tidak ditemukan.',
   'member.alreadyMember': 'Sudah menjadi anggota.',
   'member.inviteFailed': 'Undangan gagal.',
+  'member.inviteSuccess': 'Undangan berhasil dikirim!',
+  'member.noOwnedProjects': 'Anda tidak memiliki proyek.',
   'member.removeConfirm': 'Hapus {name} dari proyek?',
   'sidebar.projects': 'Proyek',
   'sidebar.favorites': 'Favorit',
@@ -1560,9 +1734,11 @@ export const id: typeof ko = {
   'common.save': 'Simpan',
   'myIssues.title': 'Tugas Saya',
   'myIssues.empty': 'Tidak ada tugas yang ditugaskan kepada Anda.',
+  'myIssues.search': 'Cari tugas…',
   'sidebar.myIssues': 'Tugas Saya',
   'sidebar.blueMode': 'Mode Gelap Biru',
   'sidebar.blackMode': 'Mode Gelap Hitam',
+  'sidebar.members': 'Anggota',
 
   'nav.issues': 'Isu',
   'nav.reports': 'Laporan',
@@ -1581,6 +1757,7 @@ export const id: typeof ko = {
   'time.minutes': 'mnt',
   'time.hours': 'jam',
   'time.days': 'hari',
+  'time.justNow': 'baru saja',
   'report.cycleTimeCount': '{count} tugas',
   'project.settingsTitle': 'Pengaturan Proyek',
   'project.nameLabel': 'Nama Proyek',
@@ -1597,6 +1774,11 @@ export const id: typeof ko = {
   'project.keyValidation': 'Hanya huruf (A-Z), maks. 20',
   'common.saving': 'Menyimpan…',
   'common.saved': 'Tersimpan ✓',
+  'comment.title': 'Komentar',
+  'comment.placeholder': 'Tulis komentar… (Ctrl+Enter untuk kirim, @ untuk sebut)',
+  'comment.submit': 'Komentar',
+  'comment.submitting': 'Mengirim…',
+  'comment.delete': 'Hapus komentar',
 
   // Dependencies
   'dependency.title': 'Dependensi',
@@ -1630,6 +1812,14 @@ export const id: typeof ko = {
   'activity.due_date_removed': 'menghapus tenggat waktu',
   'activity.project_moved': 'memindahkan dari {from} ke {to}',
   'activity.unassigned': 'tidak ditugaskan',
+  'activity.commented': 'mengomentari',
+  'notification.title': 'Notifikasi',
+  'notification.markAllRead': 'Tandai semua telah dibaca',
+  'notification.mention': '{actor} menyebut Anda di {ref}',
+  'notification.assigned': '{actor} menugaskan Anda ke {ref}',
+  'notification.someone': 'Seseorang',
+  'notification.anIssue': 'sebuah isu',
+  'notification.empty': 'Tidak ada notifikasi',
 };
 
 export const LANGUAGES = [

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { tasksApi } from '$lib/api/tasks';
-  import type { Task, TaskStatus, TaskPriority, User, TaskAttachment, TaskActivity, TaskDependencies, DependencyTask, SubTask } from '$lib/types';
+  import type { Task, TaskStatus, TaskPriority, User, TaskAttachment, TaskActivity, TaskDependencies, DependencyTask, SubTask, TaskComment } from '$lib/types';
   import { TASK_STATUSES, PRIORITY_CONFIG } from '$lib/types';
   import AssigneePicker from './AssigneePicker.svelte';
   import DatePicker from './DatePicker.svelte';
@@ -8,6 +8,10 @@
   import { t, dateLocale } from '$lib/i18n';
   import { get } from 'svelte/store';
   import { registerPopup, closeActivePopup, popupLeft } from '$lib/stores/popup';
+  import { page } from '$app/stores';
+  import { authStore } from '$lib/stores/auth';
+  import { renderMentions, highlightMentions } from '$lib/utils/mentions';
+  import { goto } from '$app/navigation';
 
   const {
     task,
@@ -210,9 +214,17 @@
         return translate('activity.due_date_changed', { from, to, ro: ro(to) });
       }
       case 'project_moved': {
-        const to = d.to_project ?? '';
-        return translate('activity.project_moved', { from: d.from_project ?? '', to, ro: ro(to) });
+        const fromName = d.from_project ?? '';
+        const toName   = d.to_project   ?? '';
+        const fromId   = d.from_project_id ?? '';
+        const toId     = d.to_project_id   ?? '';
+        const linkClass = 'text-brand-600 dark:text-brand-400 font-medium hover:underline';
+        const fromHtml = fromId ? `<a href="/app/project/${fromId}" class="${linkClass}">${fromName}</a>` : fromName;
+        const toHtml   = toId   ? `<a href="/app/project/${toId}"   class="${linkClass}">${toName}</a>`   : toName;
+        return translate('activity.project_moved', { from: fromHtml, to: toHtml, ro: ro(toName) });
       }
+      case 'commented':
+        return translate('activity.commented');
       default:
         return act.activity_type;
     }
@@ -327,6 +339,115 @@
     if (contentType.includes('spreadsheet') || contentType.includes('excel')) return '📊';
     if (contentType.includes('document') || contentType.includes('word')) return '📝';
     return '📎';
+  }
+
+  // ── Comments ──────────────────────────────────────────────────────────────
+  let comments = $state<TaskComment[]>([]);
+  let commentContent = $state('');
+  let commentSubmitting = $state(false);
+  let commentTextareaEl = $state<HTMLTextAreaElement | null>(null);
+  let mirrorEl = $state<HTMLDivElement | null>(null);
+
+  function syncScroll(e: Event) {
+    if (mirrorEl) mirrorEl.scrollTop = (e.target as HTMLTextAreaElement).scrollTop;
+  }
+
+  // @ mention state
+  let mentionQuery = $state('');
+  let mentionVisible = $state(false);
+  let mentionIndex = $state(0);
+  let mentionStart = $state(0);
+
+  const projectMembers = $derived(
+    (() => {
+      const projects: any[] = ($page.data as any)?.projects ?? [];
+      const proj = projects.find((p: any) => p.id === task.project_id);
+      return (proj?.members ?? []).map((m: any) => m.user) as { id: number; name: string; avatar_url: string | null }[];
+    })()
+  );
+
+  const mentionResults = $derived(
+    mentionQuery
+      ? projectMembers.filter((u) =>
+          u.name.toLowerCase().includes(mentionQuery.toLowerCase())
+        ).slice(0, 6)
+      : projectMembers.slice(0, 6)
+  );
+
+  $effect(() => {
+    tasksApi.listComments(task.id).then((c) => (comments = c)).catch(() => {});
+  });
+
+  async function submitComment() {
+    const text = commentContent.trim();
+    if (!text || commentSubmitting) return;
+    commentSubmitting = true;
+    try {
+      const c = await tasksApi.createComment(task.id, text);
+      comments = [...comments, c];
+      commentContent = '';
+      mentionVisible = false;
+    } finally {
+      commentSubmitting = false;
+    }
+  }
+
+  async function deleteComment(c: TaskComment) {
+    await tasksApi.deleteComment(task.id, c.id);
+    comments = comments.filter((x) => x.id !== c.id);
+  }
+
+  function onCommentInput(e: Event) {
+    const el = e.target as HTMLTextAreaElement;
+    const val = el.value;
+    const cursor = el.selectionStart ?? val.length;
+    // Find last @ before cursor
+    const textBefore = val.slice(0, cursor);
+    const atIdx = textBefore.lastIndexOf('@');
+    if (atIdx !== -1) {
+      const after = textBefore.slice(atIdx + 1);
+      if (!after.includes(' ') && !after.includes('\n')) {
+        mentionStart = atIdx;
+        mentionQuery = after;
+        mentionVisible = true;
+        mentionIndex = 0;
+        return;
+      }
+    }
+    mentionVisible = false;
+  }
+
+  function insertMention(name: string) {
+    if (!commentTextareaEl) return;
+    const val = commentContent;
+    const before = val.slice(0, mentionStart);
+    const cursor = commentTextareaEl.selectionStart ?? val.length;
+    const after = val.slice(cursor);
+    commentContent = `${before}@${name} ${after}`;
+    mentionVisible = false;
+    mentionQuery = '';
+    // Move cursor after inserted mention
+    setTimeout(() => {
+      const pos = mentionStart + name.length + 2;
+      commentTextareaEl?.setSelectionRange(pos, pos);
+      commentTextareaEl?.focus();
+    }, 0);
+  }
+
+  function onCommentKeydown(e: KeyboardEvent) {
+    if (mentionVisible) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); mentionIndex = Math.min(mentionIndex + 1, mentionResults.length - 1); return; }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); mentionIndex = Math.max(mentionIndex - 1, 0); return; }
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+        const m = mentionResults[mentionIndex];
+        if (m) { e.preventDefault(); insertMention(m.name); return; }
+      }
+      if (e.key === 'Escape') { mentionVisible = false; return; }
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      submitComment();
+    }
   }
 </script>
 
@@ -733,14 +854,126 @@
                   <div class="w-5 h-5 rounded-full shrink-0 mt-0.5 bg-slate-200 dark:bg-slate-700"></div>
                 {/if}
                 <div class="flex-1 min-w-0">
-                  <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    {#if act.user}<span class="font-medium">{act.user.name}</span>{subjectParticle(act.user.name, $dateLocale)}{' '}{/if}{getActivityText($t, act, $dateLocale)}</p>
+                  <p
+                    class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed [&_a]:text-brand-600 [&_a]:dark:text-brand-400 [&_a]:font-medium [&_a:hover]:underline"
+                    onclick={(e) => {
+                      const a = (e.target as HTMLElement).closest('a');
+                      if (a?.href) { e.preventDefault(); goto(new URL(a.href).pathname); }
+                    }}
+                  >
+                    {#if act.user}<a href="/app/member-issues/{act.user.id}" class="font-medium text-brand-600 dark:text-brand-400 hover:underline">{act.user.name}</a>{subjectParticle(act.user.name, $dateLocale)}{' '}{/if}{@html getActivityText($t, act, $dateLocale)}</p>
                   <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{relativeTime(act.created_at, $dateLocale)}</p>
                 </div>
               </div>
             {/each}
           </div>
         {/if}
+      </div>
+
+      <!-- Comments -->
+      <div class="mt-4 pt-4 border-t border-slate-100/60 dark:border-slate-700/40">
+        <label class="block text-xs font-medium text-slate-400 dark:text-slate-500 mb-3">
+          {$t('comment.title')}
+          {#if comments.length > 0}
+            <span class="ml-1 font-normal text-slate-300 dark:text-slate-600">({comments.length})</span>
+          {/if}
+        </label>
+
+        {#if comments.length > 0}
+          <div class="space-y-3 mb-4">
+            {#each comments as c (c.id)}
+              {@const isOwn = c.user?.id === $authStore.user?.id}
+              <div class="flex gap-2 items-start group">
+                <div class="w-6 h-6 rounded-full shrink-0 overflow-hidden bg-brand-400 flex items-center justify-center text-[10px] font-bold text-white mt-0.5">
+                  {#if c.user?.avatar_url}
+                    <img src={c.user.avatar_url} alt={c.user.name ?? ''} class="w-full h-full object-cover" />
+                  {:else}
+                    {c.user?.name?.[0]?.toUpperCase() ?? '?'}
+                  {/if}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-baseline gap-2">
+                    {#if c.user}
+                      <a
+                        href="/app/member-issues/{c.user.id}"
+                        class="text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline"
+                        onclick={(e) => { e.preventDefault(); goto(`/app/member-issues/${c.user!.id}`); }}
+                      >{c.user.name}</a>
+                    {:else}
+                      <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Unknown</span>
+                    {/if}
+                    <span class="text-[10px] text-slate-400 dark:text-slate-500">{relativeTime(c.created_at, $dateLocale)}</span>
+                    {#if isOwn}
+                      <button
+                        onclick={() => deleteComment(c)}
+                        class="opacity-0 group-hover:opacity-100 ml-auto text-slate-300 dark:text-slate-600 hover:text-red-400 transition-all text-xs leading-none"
+                        title={$t('comment.delete')}
+                      >✕</button>
+                    {/if}
+                  </div>
+                  <p
+                    class="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed break-words [&_a]:text-brand-600 [&_a]:dark:text-brand-400 [&_a]:font-semibold [&_a:hover]:underline [&_a]:cursor-pointer"
+                    onclick={(e) => {
+                      const a = (e.target as HTMLElement).closest('a');
+                      if (a?.href) { e.preventDefault(); goto(new URL(a.href).pathname); }
+                    }}
+                  >{@html renderMentions(c.content, projectMembers)}</p>
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/if}
+
+        <!-- New comment textarea -->
+        <div class="relative">
+          <!-- highlight mirror (behind textarea) -->
+          <div
+            bind:this={mirrorEl}
+            class="absolute inset-0 text-xs px-3 py-2 whitespace-pre-wrap break-words overflow-hidden pointer-events-none leading-[1.625] select-none rounded-lg"
+            aria-hidden="true"
+          >{@html highlightMentions(commentContent, projectMembers)}</div>
+
+          <textarea
+            bind:this={commentTextareaEl}
+            bind:value={commentContent}
+            oninput={onCommentInput}
+            onkeydown={onCommentKeydown}
+            onscroll={syncScroll}
+            placeholder={$t('comment.placeholder')}
+            rows="3"
+            class="relative w-full text-xs px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500 select-text"
+          ></textarea>
+
+          <!-- @ mention dropdown -->
+          {#if mentionVisible && mentionResults.length > 0}
+            <div class="absolute bottom-full left-0 mb-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-lg z-20 overflow-hidden py-1">
+              {#each mentionResults as m, i (m.id)}
+                <button
+                  onclick={() => insertMention(m.name)}
+                  class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors {i === mentionIndex ? 'bg-slate-100 dark:bg-slate-700' : 'hover:bg-slate-50 dark:hover:bg-slate-700/60'}"
+                  onmouseenter={() => (mentionIndex = i)}
+                >
+                  <div class="w-5 h-5 rounded-full shrink-0 overflow-hidden bg-brand-400 flex items-center justify-center text-[9px] font-bold text-white">
+                    {#if m.avatar_url}
+                      <img src={m.avatar_url} alt={m.name} class="w-full h-full object-cover" />
+                    {:else}
+                      {m.name[0]?.toUpperCase()}
+                    {/if}
+                  </div>
+                  <span class="text-slate-700 dark:text-slate-200 truncate">{m.name}</span>
+                </button>
+              {/each}
+            </div>
+          {/if}
+
+          <div class="flex justify-end mt-1.5">
+            <button
+              onclick={submitComment}
+              disabled={commentSubmitting || !commentContent.trim()}
+              class="text-xs px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium"
+            >{commentSubmitting ? $t('comment.submitting') : $t('comment.submit')}</button>
+          </div>
+        </div>
       </div>
 
       <div class="space-y-1">

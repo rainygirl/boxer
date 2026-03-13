@@ -47,7 +47,7 @@
 
 <svelte:window onclick={() => { showColorPicker = false; }} />
 
-<header class="flex items-center justify-between px-3 md:px-6 py-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0">
+<header class="flex items-center justify-between px-3 md:px-6 h-[60px] border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0">
   <!-- Left: hamburger(mobile) · color · name · members · settings -->
   <div class="flex items-center gap-2">
     <!-- Hamburger (mobile only) -->

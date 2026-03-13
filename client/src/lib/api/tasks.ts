@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { Task, TaskStatus, TaskPriority, TaskAttachment, TaskActivity, TaskDependencies, SubTask } from '$lib/types';
+import type { Task, TaskStatus, TaskPriority, TaskAttachment, TaskActivity, TaskDependencies, SubTask, TaskComment, TaskSearchResult } from '$lib/types';
 
 export interface TaskCreate {
   title: string;
@@ -71,4 +71,17 @@ export const tasksApi = {
     api.patch<SubTask>(`/tasks/${taskId}/subtasks/${subtaskId}`, data).then((r) => r.data),
   deleteSubtask: (taskId: string, subtaskId: string) =>
     api.delete(`/tasks/${taskId}/subtasks/${subtaskId}`),
+
+  search: (q: string) =>
+    api.get<TaskSearchResult[]>(`/tasks/search`, { params: { q } }).then((r) => r.data),
+
+  byUser: (userId: string | number) =>
+    api.get<Task[]>(`/tasks/by-user/${userId}`).then((r) => r.data),
+
+  listComments: (taskId: string) =>
+    api.get<TaskComment[]>(`/tasks/${taskId}/comments`).then((r) => r.data),
+  createComment: (taskId: string, content: string) =>
+    api.post<TaskComment>(`/tasks/${taskId}/comments`, { content }).then((r) => r.data),
+  deleteComment: (taskId: string, commentId: string) =>
+    api.delete(`/tasks/${taskId}/comments/${commentId}`),
 };

@@ -89,6 +89,36 @@ export interface TaskActivity {
   created_at: string;
 }
 
+export interface TaskComment {
+  id: string;
+  task_id: string;
+  user: User | null;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Notification {
+  id: string;
+  type: 'mention' | 'assigned';
+  read: boolean;
+  created_at: string;
+  actor: User | null;
+  task_id: string | null;
+  task_ref: string | null;
+  task_title: string | null;
+  project_id: string | null;
+}
+
+export interface TaskSearchResult {
+  id: string;
+  project_id: string;
+  project_color: string;
+  ref: string;
+  title: string;
+  status: TaskStatus;
+}
+
 export const TASK_STATUSES: { value: TaskStatus; label: string; color: string; bg: string }[] = [
   { value: 'backlog',     label: 'Backlog',      color: 'text-white dark:text-slate-900',  bg: 'bg-slate-400 dark:bg-slate-500' },
   { value: 'todo',        label: 'Todo',         color: 'text-white dark:text-slate-900',  bg: 'bg-blue-500' },

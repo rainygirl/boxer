@@ -9,7 +9,7 @@
   import { draggingTask, sidebarHoverProjectId } from '$lib/stores/drag';
   import { toastStore } from '$lib/stores/toast';
   import { t, dateLocale } from '$lib/i18n';
-  import { registerPopup, closeActivePopup, popupLeft } from '$lib/stores/popup';
+  import { popupLeft } from '$lib/stores/popup';
   import DatePicker from './DatePicker.svelte';
   import { matchKorean } from '$lib/utils/hangul';
   import type { User, ProjectMember } from '$lib/types';
@@ -178,13 +178,13 @@
 
   function openStatusPopup(e: MouseEvent, taskId: string) {
     e.stopPropagation();
-    if (statusPopup?.taskId === taskId) { statusPopup = null; closeActivePopup(); return; }
+    if (statusPopup?.taskId === taskId) { statusPopup = null; return; }
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const popupH = TASK_STATUSES.length * 34 + 8;
     const top = rect.bottom + 4 + popupH > window.innerHeight ? rect.top - popupH - 4 : rect.bottom + 4;
-    statusPopup = { taskId, top, left: popupLeft(rect.left, 150) };
+    assigneePopup = null;
     priorityPopup = null;
-    registerPopup(() => { statusPopup = null; });
+    statusPopup = { taskId, top, left: popupLeft(rect.left, 150) };
   }
 
   async function setStatus(taskId: string, status: TaskStatus) {
@@ -197,13 +197,13 @@
 
   function openPriorityPopup(e: MouseEvent, taskId: string) {
     e.stopPropagation();
-    if (priorityPopup?.taskId === taskId) { priorityPopup = null; closeActivePopup(); return; }
+    if (priorityPopup?.taskId === taskId) { priorityPopup = null; return; }
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const popupH = PRIORITY_CONFIG.length * 34 + 8;
     const top = rect.bottom + 4 + popupH > window.innerHeight ? rect.top - popupH - 4 : rect.bottom + 4;
-    priorityPopup = { taskId, top, left: popupLeft(rect.left, 160) };
+    assigneePopup = null;
     statusPopup = null;
-    registerPopup(() => { priorityPopup = null; });
+    priorityPopup = { taskId, top, left: popupLeft(rect.left, 160) };
   }
 
   async function setPriority(taskId: string, priority: TaskPriority) {
@@ -239,15 +239,14 @@
 
   function openAssigneePopup(e: MouseEvent, taskId: string) {
     e.stopPropagation();
-    if (assigneePopup?.taskId === taskId) { assigneePopup = null; closeActivePopup(); return; }
+    if (assigneePopup?.taskId === taskId) { assigneePopup = null; return; }
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const popupH = 280;
     const top = rect.bottom + 4 + popupH > window.innerHeight ? rect.top - popupH - 4 : rect.bottom + 4;
-    assigneePopup = { taskId, top, left: popupLeft(rect.left, 220) };
-    assigneeQuery = '';
     statusPopup = null;
     priorityPopup = null;
-    registerPopup(() => { assigneePopup = null; });
+    assigneePopup = { taskId, top, left: popupLeft(rect.left, 220) };
+    assigneeQuery = '';
   }
 
   async function changeAssignee(taskId: string, user: User | null) {
@@ -398,7 +397,7 @@
   });
 </script>
 
-<svelte:window onclick={() => closeActivePopup()} />
+<svelte:window onclick={() => { assigneePopup = null; statusPopup = null; priorityPopup = null; }} />
 
 <div class="h-full overflow-auto scrollbar-thin bg-white dark:bg-slate-900">
 <div class="flex flex-col {narrow ? '' : 'min-w-[580px]'}">

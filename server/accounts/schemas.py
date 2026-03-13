@@ -11,3 +11,12 @@ class UserOut(Schema):
     @staticmethod
     def resolve_name(obj):
         return obj.display_name
+
+    @staticmethod
+    def resolve_avatar_url(obj):
+        url = obj.avatar_url
+        if not url:
+            return None
+        if not url.startswith(('http://', 'https://')):
+            return 'https://' + url
+        return url

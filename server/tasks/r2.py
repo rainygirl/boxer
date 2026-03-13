@@ -1,3 +1,4 @@
+import hashlib
 import mimetypes
 import os
 import uuid
@@ -50,3 +51,37 @@ def get_presigned_url(key: str, expiry: int = 3600) -> str:
 def delete_file(key: str):
     client = get_r2_client()
     client.delete_object(Bucket=settings.R2_BUCKET_NAME, Key=key)
+
+
+def upload_avatar(user_pk, image_url: str) -> str | None:
+    """Download image_url and store it in R2 under avatars/{hash}.jpg.
+    Returns the public URL if R2_PUBLIC_URL is configured, otherwise None."""
+    if not settings.R2_CONFIGURED or not settings.R2_PUBLIC_URL:
+        return None
+
+    import urllib.request
+    try:
+        req = urllib.request.Request(image_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            content = resp.read()
+            content_type = resp.headers.get('Content-Type', 'image/jpeg').split(';')[0].strip()
+    except Exception:
+        return None
+
+    ext = mimetypes.guess_extension(content_type) or '.jpg'
+    if ext in ('.jpe', '.jpeg'):
+        ext = '.jpg'
+
+    hashed = hashlib.sha256(f'{user_pk}{settings.SECRET_KEY}'.encode()).hexdigest()[:32]
+    key = f'avatars/{hashed}{ext}'
+    try:
+        get_r2_client().put_object(
+            Bucket=settings.R2_BUCKET_NAME,
+            Key=key,
+            Body=content,
+            ContentType=content_type,
+        )
+    except Exception:
+        return None
+
+    return f'{settings.R2_PUBLIC_URL.rstrip("/")}/{key}'

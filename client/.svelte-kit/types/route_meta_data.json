@@ -10,8 +10,22 @@
 		"src/routes/app/+layout.ts",
 		"src/routes/+layout.ts"
 	],
+	"/app/member-issues/[userId]": [
+		"src/routes/app/member-issues/[userId]/+page.ts",
+		"src/routes/app/+layout.ts",
+		"src/routes/+layout.ts"
+	],
+	"/app/members": [
+		"src/routes/app/members/+page.ts",
+		"src/routes/app/+layout.ts",
+		"src/routes/+layout.ts"
+	],
 	"/app/my-issues": [
 		"src/routes/app/my-issues/+page.ts",
+		"src/routes/app/+layout.ts",
+		"src/routes/+layout.ts"
+	],
+	"/app/notifications": [
 		"src/routes/app/+layout.ts",
 		"src/routes/+layout.ts"
 	],
@@ -30,6 +44,9 @@
 		"src/routes/+layout.ts"
 	],
 	"/auth/callback": [
+		"src/routes/+layout.ts"
+	],
+	"/auth/google-callback": [
 		"src/routes/+layout.ts"
 	],
 	"/login": [

@@ -3,10 +3,30 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
+  import { api } from '$lib/api/client';
 
-  onMount(() => {
-    if ($authStore.token) goto('/app', { replaceState: true });
+  let clientId = $state('');
+
+  onMount(async () => {
+    if ($authStore.token) { goto('/app', { replaceState: true }); return; }
+    try {
+      const res = await api.get<{ client_id: string }>('/auth/google-config');
+      clientId = res.data.client_id;
+    } catch {}
   });
+
+  function loginWithGoogle() {
+    if (!clientId) return;
+    const redirectUri = `${window.location.origin}/auth/google-callback`;
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'email profile',
+      access_type: 'online',
+    });
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  }
 </script>
 
 <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-slate-100">
@@ -15,9 +35,10 @@
     <h1 class="text-2xl font-bold text-slate-800 mb-1">Boxer</h1>
     <p class="text-slate-500 text-sm mb-8">{$t('login.subtitle')}</p>
 
-    <a
-      href="/accounts/google/login/"
-      class="w-full flex items-center justify-center gap-3 px-4 py-3 border border-slate-200 rounded-xl text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+    <button
+      onclick={loginWithGoogle}
+      disabled={!clientId}
+      class="w-full flex items-center justify-center gap-3 px-4 py-3 border border-slate-200 rounded-xl text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm disabled:opacity-50"
     >
       <svg class="w-5 h-5" viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -26,7 +47,7 @@
         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
       </svg>
       {$t('login.continue')}
-    </a>
+    </button>
 
     <p class="text-xs text-slate-400 mt-6">
       {$t('login.terms')}

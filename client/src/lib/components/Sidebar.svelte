@@ -15,17 +15,92 @@
   import CreateProjectModal from './CreateProjectModal.svelte';
   import LanguageModal from './LanguageModal.svelte';
   import EditNicknameModal from './EditNicknameModal.svelte';
+  import InviteMemberModal from './InviteMemberModal.svelte';
+  import { tasksApi } from '$lib/api/tasks';
+  import type { TaskSearchResult } from '$lib/types';
 
   const { projects }: { projects: Project[] } = $props();
+
+  // ── Sidebar search ────────────────────────────────────────────────────────
+  let searchQuery = $state('');
+  let searchResults = $state<TaskSearchResult[]>([]);
+  let searchLoading = $state(false);
+  let searchSelectedIdx = $state(-1);
+  let searchTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function onSearchInput() {
+    if (searchTimer) clearTimeout(searchTimer);
+    const q = searchQuery.trim();
+    if (!q) { searchResults = []; searchLoading = false; searchSelectedIdx = -1; return; }
+    // Keep old results visible (no clear) — only set loading flag
+    searchLoading = true;
+    searchTimer = setTimeout(async () => {
+      try {
+        const next = await tasksApi.search(q);
+        searchResults = next;
+        searchSelectedIdx = -1;
+      } catch {
+        searchResults = [];
+      } finally {
+        searchLoading = false;
+      }
+    }, 300);
+  }
+
+  function onSearchKeydown(e: KeyboardEvent) {
+    if (!searchResults.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      searchSelectedIdx = Math.min(searchSelectedIdx + 1, searchResults.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      searchSelectedIdx = Math.max(searchSelectedIdx - 1, -1);
+    } else if (e.key === 'Enter' && searchSelectedIdx >= 0) {
+      e.preventDefault();
+      goToResult(searchResults[searchSelectedIdx]);
+    } else if (e.key === 'Escape') {
+      clearSearch();
+    }
+  }
+
+  function clearSearch() {
+    searchQuery = '';
+    searchResults = [];
+    searchLoading = false;
+    searchSelectedIdx = -1;
+  }
+
+  function goToResult(r: TaskSearchResult) {
+    clearSearch();
+    goto(`/app/project/${r.project_id}/issue/${r.id}`);
+  }
 
   let showCreate = $state(false);
   let showLanguageModal = $state(false);
   let showNicknameModal = $state(false);
-  let deleting = $state<string | null>(null);
+  let showInviteMember = $state(false);
   let showUserMenu = $state(false);
 
   const currentProjectId = $derived($page.params.projectId);
   const favorites = $derived(projects.filter((p) => p.is_favorite));
+
+  // Deduplicated member list across all projects (by user id)
+  const allMembers = $derived.by(() => {
+    const seen = new Set<number>();
+    const list: { id: number; name: string; avatar_url: string | null }[] = [];
+    for (const p of projects) {
+      for (const m of p.members) {
+        if (!seen.has(m.user.id)) {
+          seen.add(m.user.id);
+          list.push(m.user);
+        }
+      }
+    }
+    return list;
+  });
+  const MEMBER_MAX = 20;
+  const visibleMembers = $derived(allMembers.slice(0, MEMBER_MAX));
+  const extraMembers = $derived(Math.max(0, allMembers.length - MEMBER_MAX));
 
   // Per-project expand/collapse state; auto-expand active project
   let expandedProjects = $state(new Set<string>(currentProjectId ? [currentProjectId] : []));
@@ -54,18 +129,6 @@
     e.stopPropagation();
     await projectsApi.toggleFavorite(p.id);
     await invalidate('app:projects');
-  }
-
-  async function deleteProject(p: Project) {
-    if (!confirm(get(t)('project.deleteConfirm', { name: p.name }))) return;
-    deleting = p.id;
-    try {
-      await projectsApi.delete(p.id);
-      await invalidate('app:projects');
-      if (currentProjectId === p.id) goto('/app');
-    } finally {
-      deleting = null;
-    }
   }
 
   function handleLogout() {
@@ -123,7 +186,7 @@
   {$sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
 ">
   <!-- Logo -->
-  <div class="px-4 py-4 border-b border-slate-100 dark:border-slate-700">
+  <div class="px-4 h-[60px] flex items-center border-b border-slate-100 dark:border-slate-700">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <span class="text-xl">📦</span>
@@ -140,8 +203,64 @@
     </div>
   </div>
 
-  <!-- My Issues -->
-  <div class="px-3 pt-3 pb-1">
+  <!-- Search -->
+  <div class="px-3 pt-3 pb-1 relative">
+    <div class="relative">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+      </svg>
+      <input
+        bind:value={searchQuery}
+        oninput={onSearchInput}
+        onkeydown={onSearchKeydown}
+        placeholder={$t('myIssues.search')}
+        class="w-full text-xs pl-8 pr-6 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+      />
+      {#if searchLoading}
+        <!-- Subtle pulse dot instead of replacing results -->
+        <span class="absolute right-2.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse pointer-events-none"></span>
+      {:else if searchQuery}
+        <button onclick={clearSearch} class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs leading-none">✕</button>
+      {/if}
+    </div>
+
+    {#if searchQuery.trim() && searchResults.length > 0}
+      <div class="absolute left-3 right-3 top-full mt-1 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-xl overflow-hidden">
+        <ul class="max-h-64 overflow-y-auto py-1">
+          {#each searchResults as r, i (r.id)}
+            <li>
+              <button
+                onclick={() => goToResult(r)}
+                onmouseenter={() => (searchSelectedIdx = i)}
+                class="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors
+                       {i === searchSelectedIdx
+                         ? 'bg-brand-50 dark:bg-brand-500/10'
+                         : 'hover:bg-slate-50 dark:hover:bg-slate-700'}"
+              >
+                <span class="text-[10px] font-mono text-slate-400 shrink-0">{r.ref}</span>
+                <span class="text-xs text-slate-700 dark:text-slate-200 truncate flex-1">{r.title}</span>
+              </button>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
+  </div>
+
+  <!-- My Notifications + My Issues -->
+  <div class="px-3 pt-1 pb-1 flex flex-col gap-0.5">
+    <a
+      href="/app/notifications"
+      class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+             {$page.url.pathname === '/app/notifications'
+               ? 'bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-400 font-medium'
+               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200'}"
+    >
+      <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+      </svg>
+      {$t('notification.title')}
+    </a>
     <a
       href="/app/my-issues"
       class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
@@ -243,13 +362,6 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/>
                 </svg>
               </button>
-              {#if isActive && !isDragTarget}
-                <button
-                  onclick={(e) => { e.preventDefault(); e.stopPropagation(); deleteProject(p); }}
-                  disabled={deleting === p.id}
-                  class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-all text-xs shrink-0"
-                >✕</button>
-              {/if}
               {#if isDragTarget}
                 <span class="text-[10px] font-semibold text-brand-500 dark:text-brand-400 shrink-0">여기에 놓기</span>
               {/if}
@@ -287,6 +399,40 @@
 
     {#if projects.length === 0}
       <p class="px-4 text-xs text-slate-400 dark:text-slate-500 mt-2">{$t('project.noProjects')}</p>
+    {/if}
+
+    <!-- Members — same hierarchy as Projects -->
+    {#if visibleMembers.length > 0}
+      <div class="mt-4">
+        <div class="flex items-center justify-between px-4 mb-2">
+          <a href="/app/members" class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
+            {$t('sidebar.members')}
+          </a>
+          <button
+            onclick={() => (showInviteMember = true)}
+            class="text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors text-lg leading-none"
+            title={$t('member.invite')}
+          >+</button>
+        </div>
+        <div class="flex flex-wrap gap-1 px-4">
+          {#each visibleMembers as m (m.id)}
+            <a href="/app/member-issues/{m.id}" title={m.name} class="shrink-0">
+              {#if m.avatar_url}
+                <img src={m.avatar_url} alt={m.name} class="w-7 h-7 rounded-full object-cover hover:ring-2 hover:ring-brand-400 transition-all" />
+              {:else}
+                <div class="w-7 h-7 rounded-full bg-brand-500 text-white text-xs flex items-center justify-center font-medium hover:ring-2 hover:ring-brand-400 transition-all">
+                  {m.name[0]}
+                </div>
+              {/if}
+            </a>
+          {/each}
+          {#if extraMembers > 0}
+            <a href="/app/members" class="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-[10px] font-semibold flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors shrink-0">
+              +{extraMembers}
+            </a>
+          {/if}
+        </div>
+      </div>
     {/if}
   </div>
 
@@ -364,4 +510,8 @@
 
 {#if showNicknameModal}
   <EditNicknameModal onClose={() => (showNicknameModal = false)} />
+{/if}
+
+{#if showInviteMember}
+  <InviteMemberModal {projects} onClose={() => (showInviteMember = false)} />
 {/if}

@@ -44,6 +44,28 @@ def my_tasks(request: HttpRequest):
     )
 
 
+@router.get('/by-user/{user_id}', response=List[TaskOut], summary='특정 유저 태스크 목록')
+def user_tasks(request: HttpRequest, user_id: int):
+    target_user = get_object_or_404(User, pk=user_id)
+    # Only return tasks in projects where both the requester and target are members
+    from django.db.models import Q
+    shared_project_ids = (
+        Project.objects
+        .filter(members=request.auth)
+        .filter(members=target_user)
+        .values_list('id', flat=True)
+    )
+    return (
+        _task_qs()
+        .filter(
+            assignee=target_user,
+            project_id__in=shared_project_ids,
+            parent_task__isnull=True,
+        )
+        .order_by('status', 'sort_order', 'created_at')
+    )
+
+
 @router.get('/search', response=List[TaskSearchResult], summary='태스크 검색')
 def search_tasks(request: HttpRequest, q: str = ''):
     if not q.strip():
@@ -99,6 +121,17 @@ def create_task(request: HttpRequest, project_id: UUID, payload: TaskCreate):
             **data,
         )
         TaskActivity.objects.create(task=task, user=request.auth, activity_type='created', data={})
+
+        if assignee_id:
+            assignee = User.objects.filter(pk=assignee_id).first()
+            if assignee:
+                Notification.objects.create(
+                    recipient=assignee,
+                    actor=request.auth,
+                    type='assigned',
+                    task=task,
+                )
+
     return _task_qs().get(pk=task.pk)
 
 
@@ -129,6 +162,7 @@ def update_task(request: HttpRequest, task_id: UUID, payload: TaskUpdate):
             data={'from': task.priority, 'to': data['priority']},
         ))
 
+    assignee_notification_user = None
     if 'assignee_id' in data:
         old = task.assignee
         new_id = data['assignee_id']
@@ -144,6 +178,8 @@ def update_task(request: HttpRequest, task_id: UUID, payload: TaskUpdate):
                     'to_name': new_user.display_name if new_user else None,
                 },
             ))
+            if new_user:
+                assignee_notification_user = new_user
         task.assignee_id = data.pop('assignee_id')
 
     if ('title' in data and data['title'] != task.title) or \
@@ -169,17 +205,13 @@ def update_task(request: HttpRequest, task_id: UUID, payload: TaskUpdate):
         TaskActivity.objects.bulk_create(activities)
 
     # Notification: assigned
-    if 'assignee_id' in payload.dict(exclude_unset=True):
-        new_assignee_id = payload.dict(exclude_unset=True)['assignee_id']
-        if new_assignee_id and new_assignee_id != (task.assignee_id):
-            new_assignee = User.objects.filter(pk=new_assignee_id).first()
-            if new_assignee and new_assignee != request.auth:
-                Notification.objects.create(
-                    recipient=new_assignee,
-                    actor=request.auth,
-                    type='assigned',
-                    task=task,
-                )
+    if assignee_notification_user:
+        Notification.objects.create(
+            recipient=assignee_notification_user,
+            actor=request.auth,
+            type='assigned',
+            task=task,
+        )
 
     return _task_qs().get(pk=task.pk)
 
@@ -209,7 +241,7 @@ def move_task(request: HttpRequest, task_id: UUID, payload: TaskMove):
             )
             activities.append(TaskActivity(
                 task=task, user=request.auth, activity_type='project_moved',
-                data={'from_project': task.project.name, 'to_project': target.name},
+                data={'from_project': task.project.name, 'from_project_id': str(task.project_id), 'to_project': target.name, 'to_project_id': str(target.id)},
             ))
             number = target.next_task_number
             target.next_task_number += 1
@@ -393,8 +425,7 @@ def create_comment(request: HttpRequest, task_id: UUID, payload: CommentCreate):
     TaskActivity.objects.create(task=task, user=request.auth, activity_type='commented', data={})
 
     # Parse @mentions and create notifications
-    import re as _re
-    mention_names = _re.findall(r'@(\S+)', payload.content)
+    mention_names = re.findall(r'@(\S+)', payload.content)
     if mention_names:
         from projects.models import ProjectMember
         members = ProjectMember.objects.filter(

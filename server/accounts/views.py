@@ -9,14 +9,23 @@ import jwt
 def jwt_redirect_view(request):
     user = request.user
 
-    # Update avatar from social account if available
+    # Update avatar from social account if available, uploading to R2
     try:
         social = user.socialaccount_set.filter(provider='google').first()
         if social:
             picture = social.extra_data.get('picture', '')
-            if picture and not user.avatar_url:
-                user.avatar_url = picture
-                user.save(update_fields=['avatar_url'])
+            if picture:
+                # Upload to R2 only if avatar is not yet stored there
+                already_synced = (
+                    user.avatar_url
+                    and not user.avatar_url.startswith('https://lh3.googleusercontent.com')
+                    and not user.avatar_url.startswith('https://lh')
+                )
+                if not already_synced:
+                    from tasks.r2 import upload_avatar
+                    r2_url = upload_avatar(user.pk, picture)
+                    user.avatar_url = r2_url or picture
+                    user.save(update_fields=['avatar_url'])
     except Exception:
         pass
 

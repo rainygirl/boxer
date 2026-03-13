@@ -6,7 +6,7 @@
   import { tasksApi } from '$lib/api/tasks';
   import { t, dateLocale } from '$lib/i18n';
   import { goto } from '$app/navigation';
-  import { registerPopup, closeActivePopup, popupLeft } from '$lib/stores/popup';
+  import { popupLeft } from '$lib/stores/popup';
   import { sidebarOpen } from '$lib/stores/sidebar';
   import { matchKorean } from '$lib/utils/hangul';
   import type { User, ProjectMember } from '$lib/types';
@@ -166,15 +166,14 @@
 
   function openAssigneePopup(e: MouseEvent, task: Task) {
     e.stopPropagation();
-    if (assigneePopup?.taskId === task.id) { assigneePopup = null; closeActivePopup(); return; }
+    if (assigneePopup?.taskId === task.id) { assigneePopup = null; return; }
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const popupH = 280;
     const top = rect.bottom + 4 + popupH > window.innerHeight ? rect.top - popupH - 4 : rect.bottom + 4;
-    assigneePopup = { taskId: task.id, projectId: task.project_id, top, left: popupLeft(rect.left, 220) };
-    assigneeQuery = '';
     statusPopup = null;
     priorityPopup = null;
-    registerPopup(() => { assigneePopup = null; });
+    assigneePopup = { taskId: task.id, projectId: task.project_id, top, left: popupLeft(rect.left, 220) };
+    assigneeQuery = '';
   }
 
   async function changeAssignee(taskId: string, user: User | null) {
@@ -185,24 +184,24 @@
 
   function openStatusPopup(e: MouseEvent, taskId: string) {
     e.stopPropagation();
-    if (statusPopup?.taskId === taskId) { statusPopup = null; closeActivePopup(); return; }
+    if (statusPopup?.taskId === taskId) { statusPopup = null; return; }
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const popupH = TASK_STATUSES.length * 34 + 8;
     const top = rect.bottom + 4 + popupH > window.innerHeight ? rect.top - popupH - 4 : rect.bottom + 4;
-    statusPopup = { taskId, top, left: popupLeft(rect.left, 150) };
+    assigneePopup = null;
     priorityPopup = null;
-    registerPopup(() => { statusPopup = null; });
+    statusPopup = { taskId, top, left: popupLeft(rect.left, 150) };
   }
 
   function openPriorityPopup(e: MouseEvent, taskId: string) {
     e.stopPropagation();
-    if (priorityPopup?.taskId === taskId) { priorityPopup = null; closeActivePopup(); return; }
+    if (priorityPopup?.taskId === taskId) { priorityPopup = null; return; }
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const popupH = PRIORITY_CONFIG.length * 34 + 8;
     const top = rect.bottom + 4 + popupH > window.innerHeight ? rect.top - popupH - 4 : rect.bottom + 4;
-    priorityPopup = { taskId, top, left: popupLeft(rect.left, 160) };
+    assigneePopup = null;
     statusPopup = null;
-    registerPopup(() => { priorityPopup = null; });
+    priorityPopup = { taskId, top, left: popupLeft(rect.left, 160) };
   }
 
   async function setStatus(taskId: string, status: TaskStatus) {
@@ -304,11 +303,11 @@
   }
 </script>
 
-<svelte:window onclick={() => closeActivePopup()} />
+<svelte:window onclick={() => { assigneePopup = null; statusPopup = null; priorityPopup = null; }} />
 
 <div class="flex flex-col h-full overflow-hidden bg-white dark:bg-slate-900">
   <!-- Header -->
-  <div class="flex items-center justify-between px-3 md:px-6 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+  <div class="flex items-center justify-between px-3 md:px-6 h-[60px] border-b border-slate-200 dark:border-slate-700 shrink-0">
     <div class="flex items-center gap-2">
       <!-- Hamburger (mobile only) -->
       <button
@@ -323,17 +322,19 @@
         {$t('myIssues.title')}
       </h1>
     </div>
-    <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
-      <button
-        onclick={() => (viewMode = 'board')}
-        class="px-3 py-1 text-xs font-medium rounded-md transition-colors
-               {viewMode === 'board' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}"
-      >{$t('view.board')}</button>
-      <button
-        onclick={() => (viewMode = 'table')}
-        class="px-3 py-1 text-xs font-medium rounded-md transition-colors
-               {viewMode === 'table' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}"
-      >{$t('view.table')}</button>
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
+        <button
+          onclick={() => (viewMode = 'board')}
+          class="px-3 py-1 text-xs font-medium rounded-md transition-colors
+                 {viewMode === 'board' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}"
+        >{$t('view.board')}</button>
+        <button
+          onclick={() => (viewMode = 'table')}
+          class="px-3 py-1 text-xs font-medium rounded-md transition-colors
+                 {viewMode === 'table' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}"
+        >{$t('view.table')}</button>
+      </div>
     </div>
   </div>
 
