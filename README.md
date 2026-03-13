@@ -108,7 +108,7 @@
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/boxer.git
+git clone https://github.com/rainygirl/boxer.git
 cd boxer
 ```
 
