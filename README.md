@@ -360,6 +360,30 @@ python3 manage.py createsuperuser
 
 ---
 
+## Contributing
+
+🇰🇷 기여를 환영합니다! 새로운 기능, UI 개선, 워크플로우 아이디어 등 Boxer를 더 좋게 만들 수 있다고 생각하는 것이라면 무엇이든 코드로 제안해 주세요. 정해진 범위는 없습니다. 창의적인 아이디어가 있다면 PR로 자유롭게 올려주세요.
+
+🇺🇸 Contributions are welcome! Feel free to open a PR with any ideas you'd like to explore — new features, UI improvements, workflow enhancements, or anything else you think would make Boxer better. There's no strict scope; if you have a creative idea, bring it as code.
+
+🇪🇸 ¡Las contribuciones son bienvenidas! Siéntete libre de abrir un PR con cualquier idea que quieras explorar: nuevas funcionalidades, mejoras de UI, flujos de trabajo u otras ideas que creas que mejorarían Boxer. No hay un alcance estricto; si tienes una idea creativa, preséntala como código.
+
+🇫🇷 Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une PR avec vos idées — nouvelles fonctionnalités, améliorations de l'interface, flux de travail ou tout ce qui pourrait améliorer Boxer. Il n'y a pas de périmètre strict ; si vous avez une idée créative, proposez-la sous forme de code.
+
+🇯🇵 コントリビューションを歓迎します！新機能、UIの改善、ワークフローのアイデアなど、Boxerをより良くするためのアイデアがあれば、コードとしてPRを送ってください。範囲に制限はありません。クリエイティブなアイデアがあれば、ぜひ提案してください。
+
+🇨🇳 欢迎贡献！无论是新功能、UI 改进、工作流优化，还是任何你认为能让 Boxer 更好的想法，都欢迎以代码形式提交 PR。没有严格的范围限制，如果你有创意想法，尽管提出来吧。
+
+🇹🇼 歡迎貢獻！無論是新功能、UI 改進、工作流程優化，或任何你認為能讓 Boxer 更好的想法，都歡迎以程式碼形式提交 PR。沒有嚴格的範圍限制，有創意的想法儘管提出來吧。
+
+🇭🇰 歡迎貢獻！無論係新功能、UI 改進、工作流程優化，定係任何你覺得可以令 Boxer 更好嘅想法，都歡迎以程式碼形式提交 PR。冇嚴格嘅範圍限制，有創意嘅想法儘管提出嚟囉。
+
+🇻🇳 Đóng góp luôn được chào đón! Hãy thoải mái mở PR với bất kỳ ý tưởng nào bạn muốn thử — tính năng mới, cải tiến giao diện, luồng công việc hay bất cứ điều gì bạn nghĩ sẽ giúp Boxer tốt hơn. Không có phạm vi cứng nhắc; nếu bạn có ý tưởng sáng tạo, hãy đưa nó vào code.
+
+🇮🇩 Kontribusi sangat disambut! Silakan buka PR dengan ide apa pun yang ingin kamu eksplorasi — fitur baru, peningkatan UI, alur kerja, atau hal lain yang menurutmu bisa membuat Boxer lebih baik. Tidak ada batasan ketat; jika kamu punya ide kreatif, sampaikan dalam bentuk kode.
+
+---
+
 ## License
 
 MIT
