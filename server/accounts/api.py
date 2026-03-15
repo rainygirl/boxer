@@ -37,8 +37,14 @@ class GoogleConfigOut(Schema):
 
 @router.get('/google-config', auth=None, response=GoogleConfigOut, summary='Google OAuth 설정')
 def google_config(request: HttpRequest):
+    try:
+        from allauth.socialaccount.models import SocialApp
+        app = SocialApp.objects.filter(provider='google').first()
+        client_id = app.client_id if app else ''
+    except Exception:
+        client_id = ''
     return {
-        'client_id': settings.SOCIALACCOUNT_PROVIDERS.get('google', {}).get('APP', {}).get('client_id', ''),
+        'client_id': client_id,
         'disable_file_upload': settings.DISABLE_FILE_UPLOAD,
         'demo_mode': settings.DEMO_MODE,
         'demo_project_id': settings.DEMO_PROJECT_ID,

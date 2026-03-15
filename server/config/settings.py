@@ -11,6 +11,7 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'jwt-dev-secret-change-in-production')
 CLIENT_URL = os.environ.get('CLIENT_URL', 'http://localhost:5173')
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+USE_X_FORWARDED_HOST = True
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -114,11 +115,6 @@ LOGIN_REDIRECT_URL = '/auth/jwt/'
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
-        'APP': {
-            'client_id': os.environ.get('GOOGLE_CLIENT_ID', ''),
-            'secret': os.environ.get('GOOGLE_CLIENT_SECRET', ''),
-            'key': '',
-        },
         'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {'access_type': 'online'},
         'FETCH_USERINFO': True,

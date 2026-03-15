@@ -120,8 +120,8 @@ Go to [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Ser
 
 - Application type: `Web application`
 - Add the following to **Authorized redirect URIs**:
-  ```
-  http://localhost:4000/accounts/google/login/callback/
+  - For **development**: `http://localhost:5173/accounts/google/login/callback/`
+  - For **production**: `https://your-domain.com/accounts/google/login/callback/`
   ```
 - Copy the **Client ID** and **Client Secret** — you'll need them in the next step.
 

@@ -9,7 +9,11 @@ export default defineConfig({
     proxy: {
       '/api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
       '/auth/jwt': { target: 'http://127.0.0.1:4000', changeOrigin: true },
-      '/accounts': { target: 'http://127.0.0.1:4000', changeOrigin: true },
+      '/accounts': {
+        target: 'http://127.0.0.1:4000',
+        changeOrigin: true,
+        headers: { 'X-Forwarded-Host': 'localhost:5173', 'X-Forwarded-Proto': 'http' },
+      },
     },
   },
 });
