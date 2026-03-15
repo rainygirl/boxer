@@ -30,11 +30,15 @@ class TokenOut(Schema):
 
 class GoogleConfigOut(Schema):
     client_id: str
+    disable_file_upload: bool
 
 
 @router.get('/google-config', auth=None, response=GoogleConfigOut, summary='Google OAuth 설정')
 def google_config(request: HttpRequest):
-    return {'client_id': settings.SOCIALACCOUNT_PROVIDERS.get('google', {}).get('APP', {}).get('client_id', '')}
+    return {
+        'client_id': settings.SOCIALACCOUNT_PROVIDERS.get('google', {}).get('APP', {}).get('client_id', ''),
+        'disable_file_upload': settings.DISABLE_FILE_UPLOAD,
+    }
 
 
 @router.post('/google', auth=None, response=TokenOut, summary='Google OAuth 코드 교환')

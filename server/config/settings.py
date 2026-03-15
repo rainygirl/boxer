@@ -125,6 +125,8 @@ R2_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME', 'boxer')
 R2_PUBLIC_URL = os.environ.get('R2_PUBLIC_URL', '')  # optional: custom domain for public access
 R2_CONFIGURED = bool(R2_ACCOUNT_ID and R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY)
 
+DISABLE_FILE_UPLOAD = os.environ.get('DISABLE_FILE_UPLOAD', 'False') == 'True'
+
 # CORS
 CORS_ALLOWED_ORIGINS = [
     CLIENT_URL,

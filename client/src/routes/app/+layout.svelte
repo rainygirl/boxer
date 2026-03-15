@@ -1,5 +1,6 @@
 <script lang="ts">
   import { authStore } from '$lib/stores/auth';
+  import { configStore } from '$lib/stores/config';
   import Sidebar from '$lib/components/Sidebar.svelte';
   import Toast from '$lib/components/Toast.svelte';
   import QuickCreateModal from '$lib/components/QuickCreateModal.svelte';
@@ -11,6 +12,7 @@
 
   $effect(() => {
     authStore.setUser(data.user);
+    configStore.set({ disableFileUpload: data.disableFileUpload });
   });
 </script>
 

@@ -307,6 +307,7 @@ python3 manage.py migrate
 | `ALLOWED_HOSTS` | No | Comma-separated hostnames (default: `localhost,127.0.0.1`) |
 | `CLIENT_URL` | No | Frontend origin for CORS (default: `http://localhost:5173`) |
 | `BACKEND_URL` | No | Internal Django URL for SvelteKit → Django webhook proxy (default: `http://127.0.0.1:4000`) |
+| `DISABLE_FILE_UPLOAD` | No | Set to `True` to disable file uploads across the entire app (default: `False`) |
 | `R2_ACCOUNT_ID` | No | Cloudflare R2 account ID (file attachments) |
 | `R2_ACCESS_KEY_ID` | No | Cloudflare R2 access key |
 | `R2_SECRET_ACCESS_KEY` | No | Cloudflare R2 secret key |

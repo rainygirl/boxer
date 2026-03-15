@@ -10,6 +10,7 @@
   import { registerPopup, closeActivePopup, popupLeft } from '$lib/stores/popup';
   import { page } from '$app/stores';
   import { authStore } from '$lib/stores/auth';
+  import { configStore } from '$lib/stores/config';
   import { renderMentions, highlightMentions } from '$lib/utils/mentions';
   import { goto } from '$app/navigation';
 
@@ -113,6 +114,10 @@
   }
 
   async function uploadFiles(files: FileList | File[]) {
+    if ($configStore.disableFileUpload) {
+      uploadError = get(t)('attachment.uploadDisabled');
+      return;
+    }
     const list = Array.from(files);
     if (!list.length) return;
     uploading = true;
@@ -580,8 +585,8 @@
         <div
           role="button"
           tabindex="0"
-          onclick={() => fileInputEl?.click()}
-          onkeydown={(e) => e.key === 'Enter' && fileInputEl?.click()}
+          onclick={() => { if ($configStore.disableFileUpload) { uploadError = get(t)('attachment.uploadDisabled'); } else { fileInputEl?.click(); } }}
+          onkeydown={(e) => e.key === 'Enter' && !$configStore.disableFileUpload && fileInputEl?.click()}
           ondragover={(e) => { e.preventDefault(); dragOver = true; }}
           ondragleave={() => (dragOver = false)}
           ondrop={handleDrop}

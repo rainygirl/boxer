@@ -7,6 +7,6 @@ export const load = async ({ depends }) => {
   if (!token) redirect(302, '/login');
 
   depends('app:projects');
-  const [user, projects] = await Promise.all([authApi.me(), projectsApi.list()]);
-  return { user, projects };
+  const [user, projects, config] = await Promise.all([authApi.me(), projectsApi.list(), authApi.getConfig()]);
+  return { user, projects, disableFileUpload: config.disable_file_upload };
 };

@@ -528,6 +528,8 @@ def list_attachments(request: HttpRequest, task_id: UUID):
 
 @router.post('/{task_id}/attachments', response=AttachmentOut, summary='첨부파일 업로드')
 def upload_attachment(request: HttpRequest, task_id: UUID, file: UploadedFile = File(...)):
+    if settings.DISABLE_FILE_UPLOAD:
+        raise HttpError(403, 'File upload is disabled')
     if not settings.R2_CONFIGURED:
         raise HttpError(503, 'File storage is not configured')
 
