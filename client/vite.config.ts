@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [sveltekit()],
   server: {
     port: 5173,
+    allowedHosts: 'all',
     proxy: {
       '/api': { target: 'http://127.0.0.1:4000', changeOrigin: true },
       '/auth/jwt': { target: 'http://127.0.0.1:4000', changeOrigin: true },
