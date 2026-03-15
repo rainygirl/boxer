@@ -163,39 +163,6 @@ This runs the following in sequence:
 
 No need to manually activate the virtual environment — all scripts use `.venv` automatically.
 
-### 5. Create a Django superuser
-
-```bash
-cd server
-python3 manage.py createsuperuser
-```
-
-### 6. Configure the Django admin
-
-Start the server temporarily:
-
-```bash
-cd server
-python3 manage.py runserver 4000
-```
-
-Open `http://localhost:4000/admin` and log in with the superuser you just created.
-
-**Sites**
-- Go to **Sites** → click the default entry (`example.com`)
-- Set **Domain name** to `localhost:4000`
-- Set **Display name** to `localhost`
-- Save
-
-**Social Applications**
-- Go to **Social applications** → **Add social application**
-- Provider: `Google`
-- Name: `Google`
-- Client id: *(paste your Google Client ID)*
-- Secret key: *(paste your Google Client Secret)*
-- Under **Sites**, move `localhost:4000` to **Chosen sites**
-- Save
-
 ---
 
 ## Running the dev server
@@ -326,8 +293,6 @@ python3 manage.py migrate
 cd server
 rm boxer.db
 python3 manage.py migrate
-python3 manage.py createsuperuser
-# Then redo the Django admin steps (Sites + Social Applications)
 ```
 
 ### Environment variables reference
