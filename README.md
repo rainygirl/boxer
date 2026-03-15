@@ -194,26 +194,27 @@ cd client && npm run dev
 
 ## Production Deployment
 
-### 1. Build the frontend
+### 1. Build
 
 ```bash
 npm run build
 ```
 
-This produces static files in `client/build/`.
+Builds the frontend and collects Django static files.
 
-### 2. Start the production server
+### 2. Start the server
 
 ```bash
 npm start
 ```
 
-This starts both servers simultaneously:
+Gunicorn serves both the frontend and API on a single port.
 
 | Service | URL |
 |---------|-----|
-| Frontend | http://localhost:5173 |
-| Backend API | http://localhost:4173 |
+| App (frontend + API) | http://localhost:4173 |
+| API docs (Swagger) | http://localhost:4173/api/docs |
+| Django admin | http://localhost:4173/admin |
 
 > **Notes**
 > - Set `DEBUG=False` and `ALLOWED_HOSTS=your-domain.com` in `.env`.
