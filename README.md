@@ -156,22 +156,12 @@ npm run setup
 ```
 
 This runs the following in sequence:
-- `pip3 install -r server/requirements.txt`
-- `python3 manage.py migrate` (creates `server/boxer.db`)
-- `npm install` inside `client/`
+1. Creates a Python virtual environment at `.venv`
+2. Installs Python packages via `.venv/bin/pip3`
+3. Runs `python3 manage.py migrate` (creates `server/boxer.db`)
+4. Runs `npm install` inside `client/`
 
-Or run each step manually:
-
-```bash
-# Backend
-cd server
-pip3 install -r requirements.txt
-python3 manage.py migrate
-
-# Frontend
-cd ../client
-npm install
-```
+No need to manually activate the virtual environment — all scripts use `.venv` automatically.
 
 ### 5. Create a Django superuser
 
