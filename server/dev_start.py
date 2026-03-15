@@ -57,4 +57,4 @@ if missing_required:
 print("\n✅ 환경변수 확인 완료 — 서버를 시작합니다.\n")
 
 # Replace this process with the Django dev server
-os.execvp(sys.executable, [sys.executable, 'manage.py', 'runserver', '4173'])
+os.execvp(sys.executable, [sys.executable, 'manage.py', 'runserver', '4000'])

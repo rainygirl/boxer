@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:server": "cd server && ../.venv/bin/python3 dev_start.py",
+    "dev:server": "[ -d .venv ] || npm run setup && cd server && ../.venv/bin/python3 dev_start.py",
     "dev:client": "cd client && npm run dev",
     "setup:venv": "python3 -m venv .venv",
     "setup:server": "cd server && ../.venv/bin/pip3 install -r requirements.txt && ../.venv/bin/python3 manage.py migrate",
