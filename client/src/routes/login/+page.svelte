@@ -19,15 +19,7 @@
 
   function loginWithGoogle() {
     if (!clientId) return;
-    const redirectUri = `${window.location.origin}/auth/google-callback`;
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      response_type: 'code',
-      scope: 'email profile',
-      access_type: 'online',
-    });
-    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+    window.location.href = '/accounts/google/login/';
   }
 </script>
 
