@@ -18,6 +18,7 @@
       demoMode = res.data.demo_mode;
     } catch {}
     loaded = true;
+    if (demoMode) { loginAsGuest(); return; }
   });
 
   function loginWithGoogle() {
