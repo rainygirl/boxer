@@ -127,6 +127,9 @@ R2_CONFIGURED = bool(R2_ACCOUNT_ID and R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY
 
 DISABLE_FILE_UPLOAD = os.environ.get('DISABLE_FILE_UPLOAD', 'False') == 'True'
 
+DEMO_MODE = os.environ.get('DEMO_MODE', 'False') == 'True'
+DEMO_PROJECT_ID = os.environ.get('DEMO_PROJECT_ID', '')
+
 # CORS
 CORS_ALLOWED_ORIGINS = [
     CLIENT_URL,

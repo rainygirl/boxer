@@ -8,5 +8,11 @@ export const load = async ({ depends }) => {
 
   depends('app:projects');
   const [user, projects, config] = await Promise.all([authApi.me(), projectsApi.list(), authApi.getConfig()]);
-  return { user, projects, disableFileUpload: config.disable_file_upload };
+  return {
+    user,
+    projects,
+    disableFileUpload: config.disable_file_upload,
+    demoMode: config.demo_mode,
+    demoProjectId: config.demo_project_id,
+  };
 };

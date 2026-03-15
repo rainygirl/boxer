@@ -31,6 +31,8 @@ class TokenOut(Schema):
 class GoogleConfigOut(Schema):
     client_id: str
     disable_file_upload: bool
+    demo_mode: bool
+    demo_project_id: str
 
 
 @router.get('/google-config', auth=None, response=GoogleConfigOut, summary='Google OAuth 설정')
@@ -38,6 +40,8 @@ def google_config(request: HttpRequest):
     return {
         'client_id': settings.SOCIALACCOUNT_PROVIDERS.get('google', {}).get('APP', {}).get('client_id', ''),
         'disable_file_upload': settings.DISABLE_FILE_UPLOAD,
+        'demo_mode': settings.DEMO_MODE,
+        'demo_project_id': settings.DEMO_PROJECT_ID,
     }
 
 
@@ -108,6 +112,15 @@ def google_login(request: HttpRequest, payload: GoogleCallbackIn):
         from projects.models import Project, ProjectMember
         for proj in Project.objects.filter(visibility='public'):
             ProjectMember.objects.get_or_create(project=proj, user=user, defaults={'role': 'member'})
+
+    # Auto-join demo project for all users in demo mode
+    if settings.DEMO_MODE and settings.DEMO_PROJECT_ID:
+        from projects.models import Project, ProjectMember
+        try:
+            demo_proj = Project.objects.get(pk=settings.DEMO_PROJECT_ID)
+            ProjectMember.objects.get_or_create(project=demo_proj, user=user, defaults={'role': 'member'})
+        except Project.DoesNotExist:
+            pass
 
     # 5) Issue JWT
     token = jwt.encode(

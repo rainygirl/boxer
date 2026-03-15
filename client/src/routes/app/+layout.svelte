@@ -12,7 +12,11 @@
 
   $effect(() => {
     authStore.setUser(data.user);
-    configStore.set({ disableFileUpload: data.disableFileUpload });
+    configStore.set({
+      disableFileUpload: data.disableFileUpload,
+      demoMode: data.demoMode,
+      demoProjectId: data.demoProjectId,
+    });
   });
 </script>
 

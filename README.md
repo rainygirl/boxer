@@ -308,6 +308,8 @@ python3 manage.py migrate
 | `CLIENT_URL` | No | Frontend origin for CORS (default: `http://localhost:5173`) |
 | `BACKEND_URL` | No | Internal Django URL for SvelteKit → Django webhook proxy (default: `http://127.0.0.1:4000`) |
 | `DISABLE_FILE_UPLOAD` | No | Set to `True` to disable file uploads across the entire app (default: `False`) |
+| `DEMO_MODE` | No | Set to `True` to auto-add every logged-in user to the demo project and redirect them to it on entry (default: `False`) |
+| `DEMO_PROJECT_ID` | No | UUID of the project to use as the demo workspace (required when `DEMO_MODE=True`) |
 | `R2_ACCOUNT_ID` | No | Cloudflare R2 account ID (file attachments) |
 | `R2_ACCESS_KEY_ID` | No | Cloudflare R2 access key |
 | `R2_SECRET_ACCESS_KEY` | No | Cloudflare R2 secret key |
