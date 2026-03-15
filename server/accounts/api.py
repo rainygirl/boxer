@@ -35,6 +35,45 @@ class GoogleConfigOut(Schema):
     demo_project_id: str
 
 
+@router.post('/demo', auth=None, response=TokenOut, summary='데모 로그인')
+def demo_login(request: HttpRequest):
+    if not settings.DEMO_MODE:
+        raise HttpError(403, 'Demo mode is not enabled')
+
+    import random
+    import secrets
+    ADJECTIVES = ['빠른', '조용한', '귀여운', '용감한', '행복한', '신나는', '멋진', '재미있는']
+    ANIMALS = ['판다', '여우', '코알라', '수달', '펭귄', '토끼', '고양이', '강아지']
+    name = f'{random.choice(ADJECTIVES)} {random.choice(ANIMALS)}'
+    suffix = secrets.token_hex(4)
+    username = f'guest_{suffix}'
+    email = f'{username}@demo.local'
+
+    user = User.objects.create_user(username=username, email=email)
+    user.first_name = name
+    user.save(update_fields=['first_name'])
+
+    if settings.DEMO_PROJECT_ID:
+        from projects.models import Project, ProjectMember
+        try:
+            demo_proj = Project.objects.get(pk=settings.DEMO_PROJECT_ID)
+            ProjectMember.objects.get_or_create(project=demo_proj, user=user, defaults={'role': 'member'})
+        except Project.DoesNotExist:
+            pass
+
+    token = jwt.encode(
+        {
+            'sub': str(user.pk),
+            'email': user.email,
+            'name': user.first_name,
+            'exp': datetime.now(tz=timezone.utc) + timedelta(hours=24),
+        },
+        settings.JWT_SECRET,
+        algorithm='HS256',
+    )
+    return {'token': token}
+
+
 @router.get('/google-config', auth=None, response=GoogleConfigOut, summary='Google OAuth 설정')
 def google_config(request: HttpRequest):
     try:
