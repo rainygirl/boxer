@@ -121,7 +121,7 @@ Go to [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Ser
 - Application type: `Web application`
 - Add the following to **Authorized redirect URIs**:
   ```
-  http://localhost:4000/accounts/google/login/callback/
+  http://localhost:4173/accounts/google/login/callback/
   ```
 - Copy the **Client ID** and **Client Secret** — you'll need them in the next step.
 
@@ -176,19 +176,48 @@ npm run dev
 | Service | URL |
 |---------|-----|
 | Frontend | http://localhost:5173 |
-| Backend API | http://localhost:4000 |
-| API docs (Swagger) | http://localhost:4000/api/docs |
-| Django admin | http://localhost:4000/admin |
+| Backend API | http://localhost:4173 |
+| API docs (Swagger) | http://localhost:4173/api/docs |
+| Django admin | http://localhost:4173/admin |
 
 To run them separately:
 
 ```bash
 # Backend only
-cd server && python3 manage.py runserver 4000
+cd server && python3 manage.py runserver 4173
 
 # Frontend only
 cd client && npm run dev
 ```
+
+---
+
+## Production Deployment
+
+### 1. Build the frontend
+
+```bash
+npm run build
+```
+
+This produces static files in `client/build/`.
+
+### 2. Start the production server
+
+```bash
+npm start
+```
+
+This starts both servers simultaneously:
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:4173 |
+
+> **Notes**
+> - Set `DEBUG=False` and `ALLOWED_HOSTS=your-domain.com` in `.env`.
+> - Set `CLIENT_URL=https://your-domain.com` in `.env`.
 
 ---
 
@@ -214,7 +243,7 @@ boxer/
 │   └── notifications/        # In-app notifications
 │
 └── client/                   # SvelteKit frontend
-    ├── vite.config.ts         # Proxy: /api, /auth, /accounts → :4000
+    ├── vite.config.ts         # Proxy: /api, /auth, /accounts → :4173
     └── src/
         ├── lib/
         │   ├── api/           # Axios API clients
@@ -236,7 +265,7 @@ boxer/
 
 ## API Reference
 
-Full interactive docs available at `http://localhost:4000/api/docs`.
+Full interactive docs available at `http://localhost:4173/api/docs`.
 
 All endpoints require `Authorization: Bearer <JWT>`.
 
@@ -306,7 +335,7 @@ python3 manage.py migrate
 | `DEBUG` | No | `True` (default) or `False` for production |
 | `ALLOWED_HOSTS` | No | Comma-separated hostnames (default: `localhost,127.0.0.1`) |
 | `CLIENT_URL` | No | Frontend origin for CORS (default: `http://localhost:5173`) |
-| `BACKEND_URL` | No | Internal Django URL for SvelteKit → Django webhook proxy (default: `http://127.0.0.1:4000`) |
+| `BACKEND_URL` | No | Internal Django URL for SvelteKit → Django webhook proxy (default: `http://127.0.0.1:4173`) |
 | `DISABLE_FILE_UPLOAD` | No | Set to `True` to disable file uploads across the entire app (default: `False`) |
 | `DEMO_MODE` | No | Set to `True` to auto-add every logged-in user to the demo project and redirect them to it on entry (default: `False`) |
 | `DEMO_PROJECT_ID` | No | UUID of the project to use as the demo workspace (required when `DEMO_MODE=True`) |

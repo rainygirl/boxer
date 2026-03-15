@@ -1,7 +1,7 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 
-const BACKEND_URL = env.BACKEND_URL ?? 'http://127.0.0.1:4000';
+const BACKEND_URL = env.BACKEND_URL ?? 'http://127.0.0.1:4173';
 
 export const POST: RequestHandler = async ({ params, request }) => {
   const forwardHeaders = new Headers();

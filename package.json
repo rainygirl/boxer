@@ -9,11 +9,16 @@
     "setup:server": "cd server && ../.venv/bin/pip3 install -r requirements.txt && ../.venv/bin/python3 manage.py migrate",
     "setup:client": "cd client && npm install",
     "setup": "npm run setup:venv && npm run setup:server && npm run setup:client",
+    "build": "cd client && npm run build",
+    "start": "concurrently \"npm run start:server\" \"npm run start:client\"",
+    "start:server": "cd server && ../.venv/bin/gunicorn config.wsgi:application --bind 0.0.0.0:4173 --workers 4",
+    "start:client": "serve client/build -l 5173 -s",
     "seed": "cd server && ../.venv/bin/python3 manage.py seed --reset",
     "db:restore-sample": "cp server/boxer.sample.db server/boxer.db && echo 'Restored boxer.sample.db → boxer.db'",
     "db:save-sample": "cp server/boxer.db server/boxer.sample.db && echo 'Saved boxer.db → boxer.sample.db'"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "serve": "^14.2.6"
   }
 }
